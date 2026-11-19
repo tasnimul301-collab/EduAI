@@ -90,3 +90,7 @@ def create_app(config_name: str = "default") -> Flask:
         return render_template("errors/500.html"), 500
 
     return app
+
+
+# Expose application instance for WSGI servers running 'gunicorn app:app'
+app = create_app(os.getenv("FLASK_ENV", "production"))
