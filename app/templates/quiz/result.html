@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Results: {{ quiz.title }} - EduSmart AI{% endblock %}
+{% block page_title %}Assessment Results{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <!-- Result Score Banner -->
+    <div class="card border-0 shadow-sm p-4 mb-4 text-center">
+      <div class="stat-icon-box mx-auto mb-3 bg-{{ 'success' if percentage >= 70 else ('warning' if percentage >= 50 else 'danger') }}-subtle text-{{ 'success' if percentage >= 70 else ('warning' if percentage >= 50 else 'danger') }}" style="width: 72px; height: 72px; font-size: 2.2rem;">
+        <i class="bi bi-{{ 'trophy-fill' if percentage >= 70 else ('patch-exclamation-fill' if percentage >= 50 else 'arrow-repeat') }}"></i>
+      </div>
+      <h3 class="fw-bold mb-1">
+        {% if percentage >= 80 %}Outstanding Performance!
+        {% elif percentage >= 60 %}Good Effort!
+        {% else %}Keep Practicing!
+        {% endif %}
+      </h3>
+      <p class="text-muted small mb-3">You scored <strong>{{ score }}</strong> out of <strong>{{ total }}</strong> questions</p>
+
+      <div class="d-inline-flex align-items-center justify-content-center mx-auto px-4 py-2 rounded-pill bg-light border mb-4">
+        <span class="display-6 fw-extrabold text-{{ 'success' if percentage >= 70 else ('warning' if percentage >= 50 else 'danger') }}">{{ percentage }}%</span>
+      </div>
+
+      <div class="d-flex justify-content-center gap-3">
+        <a href="{{ url_for('quiz.take', quiz_id=quiz.id) }}" class="btn btn-outline-primary btn-sm px-3">
+          <i class="bi bi-arrow-counterclockwise me-1"></i>Retake Quiz
+        </a>
+        <a href="{{ url_for('quiz.index') }}" class="btn btn-primary btn-sm px-3">
+          <i class="bi bi-list-check me-1"></i>Back to Quizzes
+        </a>
+      </div>
+    </div>
+
+    <!-- Detailed Question Review -->
+    <h5 class="fw-bold mb-3"><i class="bi bi-card-checklist text-primary me-2"></i>Question Breakdown & Explanations</h5>
+
+    {% for res in results %}
+    <div class="card border-0 shadow-sm p-4 mb-3 border-start border-4 border-{{ 'success' if res.is_correct else 'danger' }}">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <span class="fw-bold small text-muted">Question {{ loop.index }}</span>
+        <span class="badge bg-{{ 'success' if res.is_correct else 'danger' }}">
+          {{ 'Correct' if res.is_correct else 'Incorrect' }}
+        </span>
+      </div>
+
+      <h6 class="fw-bold text-dark mb-3">{{ res.question.question_text }}</h6>
+
+      <div class="d-flex flex-column gap-2 mb-3">
+        {% for opt_key, opt_text in res.question.get_options_dict().items() %}
+        <div class="p-2 px-3 rounded small d-flex justify-content-between align-items-center {% if opt_key == res.correct_option %}bg-success-subtle border border-success text-success fw-bold{% elif opt_key == res.user_answer and not res.is_correct %}bg-danger-subtle border border-danger text-danger{% else %}bg-light text-muted{% endif %}">
+          <span>({{ opt_key }}) {{ opt_text }}</span>
+          {% if opt_key == res.correct_option %}
+          <i class="bi bi-check-circle-fill text-success"></i>
+          {% elif opt_key == res.user_answer and not res.is_correct %}
+          <i class="bi bi-x-circle-fill text-danger"></i>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if res.explanation %}
+      <div class="p-3 bg-light rounded small text-secondary border-start border-3 border-info">
+        <strong>Explanation:</strong> {{ res.explanation }}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

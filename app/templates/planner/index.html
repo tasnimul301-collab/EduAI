@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Smart Study Planner - EduSmart AI{% endblock %}
+{% block page_title %}Smart Study Planner{% endblock %}
+
+{% block content %}
+<!-- Top Header & Progress Row -->
+<div class="row g-3 mb-4 align-items-center">
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm p-3">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span class="small fw-semibold text-muted">Study Plan Completion Rate</span>
+        <span class="fw-bold text-primary">{{ completion_rate }}%</span>
+      </div>
+      <div class="progress" style="height: 8px;">
+        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ completion_rate }}%;"></div>
+      </div>
+      <div class="small text-muted mt-2">
+        <strong>{{ completed_count }}</strong> completed of <strong>{{ total_count }}</strong> planned tasks
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 text-md-end">
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+      <i class="bi bi-plus-lg me-2"></i>Schedule Study Task
+    </button>
+  </div>
+</div>
+
+<!-- Filter Tabs -->
+<div class="card border-0 shadow-sm p-3 mb-4">
+  <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+    <!-- Timeframe Filters -->
+    <div class="btn-group btn-group-sm">
+      <a href="{{ url_for('planner.index', timeframe='all', status=current_status, priority=current_priority) }}" class="btn btn-{{ 'primary' if current_timeframe == 'all' else 'outline-secondary' }}">All Days</a>
+      <a href="{{ url_for('planner.index', timeframe='today', status=current_status, priority=current_priority) }}" class="btn btn-{{ 'primary' if current_timeframe == 'today' else 'outline-secondary' }}">Due Today</a>
+      <a href="{{ url_for('planner.index', timeframe='week', status=current_status, priority=current_priority) }}" class="btn btn-{{ 'primary' if current_timeframe == 'week' else 'outline-secondary' }}">Next 7 Days</a>
+    </div>
+
+    <!-- Status Filters -->
+    <div class="d-flex gap-2">
+      <select class="form-select form-select-sm" onchange="location = this.value;">
+        <option value="{{ url_for('planner.index', status='all', timeframe=current_timeframe, priority=current_priority) }}" {% if current_status == 'all' %}selected{% endif %}>Status: All</option>
+        <option value="{{ url_for('planner.index', status='pending', timeframe=current_timeframe, priority=current_priority) }}" {% if current_status == 'pending' %}selected{% endif %}>Status: Pending</option>
+        <option value="{{ url_for('planner.index', status='in_progress', timeframe=current_timeframe, priority=current_priority) }}" {% if current_status == 'in_progress' %}selected{% endif %}>Status: In Progress</option>
+        <option value="{{ url_for('planner.index', status='completed', timeframe=current_timeframe, priority=current_priority) }}" {% if current_status == 'completed' %}selected{% endif %}>Status: Completed</option>
+      </select>
+
+      <select class="form-select form-select-sm" onchange="location = this.value;">
+        <option value="{{ url_for('planner.index', priority='all', timeframe=current_timeframe, status=current_status) }}" {% if current_priority == 'all' %}selected{% endif %}>Priority: All</option>
+        <option value="{{ url_for('planner.index', priority='high', timeframe=current_timeframe, status=current_status) }}" {% if current_priority == 'high' %}selected{% endif %}>Priority: High</option>
+        <option value="{{ url_for('planner.index', priority='medium', timeframe=current_timeframe, status=current_status) }}" {% if current_priority == 'medium' %}selected{% endif %}>Priority: Medium</option>
+        <option value="{{ url_for('planner.index', priority='low', timeframe=current_timeframe, status=current_status) }}" {% if current_priority == 'low' %}selected{% endif %}>Priority: Low</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- Task Cards Grid -->
+{% if tasks %}
+<div class="row g-3">
+  {% for task in tasks %}
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100 p-3 border-0 shadow-sm border-start border-4 border-{{ 'success' if task.status == 'completed' else ('danger' if task.priority == 'high' else 'warning') }}">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <span class="badge bg-{{ 'danger-subtle text-danger' if task.priority == 'high' else ('warning-subtle text-warning' if task.priority == 'medium' else 'secondary-subtle text-secondary') }} text-uppercase" style="font-size: 0.7rem;">
+          {{ task.priority }}
+        </span>
+        <div class="d-flex align-items-center gap-1">
+          <form method="POST" action="{{ url_for('planner.toggle_status', task_id=task.id) }}">
+            <button type="submit" class="btn btn-sm btn-{{ 'success' if task.status == 'completed' else 'outline-secondary' }} p-1 px-2" title="Toggle completion">
+              <i class="bi bi-{{ 'check2-all' if task.status == 'completed' else 'circle' }}"></i>
+            </button>
+          </form>
+          <form method="POST" action="{{ url_for('planner.index') }}" onsubmit="return confirm('Delete this task?');">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="task_id" value="{{ task.id }}">
+            <button type="submit" class="btn btn-outline-danger btn-sm p-1 border-0" title="Delete">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <h6 class="fw-bold mb-1 {% if task.status == 'completed' %}text-decoration-line-through text-muted{% endif %}">
+        {{ task.title }}
+      </h6>
+
+      <p class="small text-muted mb-3 flex-grow-1">
+        {{ task.description or 'No extra notes provided.' }}
+      </p>
+
+      <div class="border-top pt-2 small text-muted d-flex justify-content-between align-items-center">
+        <span>
+          <i class="bi bi-book me-1"></i>{{ task.subject.name if task.subject else 'General' }}
+        </span>
+        <span>
+          <i class="bi bi-calendar3 me-1"></i>{{ task.due_date.strftime('%b %d') if task.due_date else 'No deadline' }}
+        </span>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card border-0 shadow-sm text-center py-5">
+  <div class="text-muted">
+    <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+    <h6>No Tasks Matching Criteria</h6>
+    <p class="small mb-3">Add study sessions, reading assignments, or review tasks to keep on schedule.</p>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+      Create Your First Task
+    </button>
+  </div>
+</div>
+{% endif %}
+
+<!-- Add Task Modal -->
+<div class="modal fade" id="addTaskModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold"><i class="bi bi-calendar-plus text-primary me-2"></i>Schedule Study Task</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('planner.index') }}">
+        <input type="hidden" name="action" value="create">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Task Title</label>
+            <input type="text" name="title" class="form-control" placeholder="e.g. Read Chapters 4-5 and solve exercises" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Subject / Course</label>
+            <select name="subject_id" class="form-select">
+              <option value="">-- General / Non-Course Task --</option>
+              {% for subj in subjects %}
+              <option value="{{ subj.id }}">{{ subj.name }} ({{ subj.code }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Priority</label>
+              <select name="priority" class="form-select">
+                <option value="low">Low Priority</option>
+                <option value="medium" selected>Medium Priority</option>
+                <option value="high">High Priority</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Target Due Date</label>
+              <input type="date" name="due_date" class="form-control">
+            </div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">Description / Goals (Optional)</label>
+            <textarea name="description" class="form-control" rows="3" placeholder="Outline specific topics to master during this session"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm px-3">Add to Planner</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

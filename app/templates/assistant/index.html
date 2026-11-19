@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}AI Study Assistant - EduSmart AI{% endblock %}
+{% block page_title %}AI Study Assistant{% endblock %}
+
+{% block content %}
+<!-- AI Configuration Banner -->
+{% if not ai_configured %}
+<div class="alert alert-info border-info shadow-sm mb-4">
+  <div class="d-flex align-items-start gap-3">
+    <i class="bi bi-info-circle-fill fs-4 text-info"></i>
+    <div class="flex-grow-1">
+      <div class="fw-bold mb-1">Running in Offline Academic Mode</div>
+      <div class="small mb-2">
+        Try the Quick Prompts below (Dijkstra, ACID, TCP vs UDP, Exam Strategies) for instant academic explanations!
+      </div>
+      <div class="small text-muted">
+        To enable unrestricted conversational AI for any question, get a free key from 
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" class="fw-semibold text-primary">Google AI Studio (free, 30s)</a>
+        and set <code>GEMINI_API_KEY=your_key</code> in your <code>.env</code> file.
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row justify-content-center">
+  <div class="col-lg-10">
+    <div class="card border-0 shadow-sm overflow-hidden">
+      <!-- Chat Header -->
+      <div class="p-3 bg-white border-bottom d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <div class="stat-icon-box bg-primary-subtle text-primary rounded-circle" style="width: 40px; height: 40px; font-size: 1.25rem;">
+            <i class="bi bi-robot"></i>
+          </div>
+          <div>
+            <h6 class="fw-bold mb-0">EduSmart Academic Tutor</h6>
+            <small class="text-success d-flex align-items-center gap-1">
+              <span class="rounded-circle bg-success d-inline-block" style="width: 8px; height: 8px;"></span>
+              {% if ai_configured %}Ready to help{% else %}API key required{% endif %}
+            </small>
+          </div>
+        </div>
+
+        <button class="btn btn-outline-secondary btn-sm" onclick="clearChat()">
+          <i class="bi bi-arrow-clockwise me-1"></i>Clear Chat
+        </button>
+      </div>
+
+      <!-- Quick Suggestion Chips -->
+      <div class="px-3 py-2 bg-light border-bottom d-flex gap-2 overflow-x-auto" style="white-space: nowrap;">
+        <span class="small text-muted py-1">Quick prompts:</span>
+        <button class="btn btn-light btn-sm border text-primary small py-1" onclick="usePrompt('Explain Dijkstra\'s Algorithm with a short step-by-step example.')">Dijkstra's Algorithm</button>
+        <button class="btn btn-light btn-sm border text-primary small py-1" onclick="usePrompt('What are ACID properties in Database Systems and why are they important?')">ACID Properties</button>
+        <button class="btn btn-light btn-sm border text-primary small py-1" onclick="usePrompt('Give me 5 proven revision strategies for university exam preparation.')">Exam Strategies</button>
+        <button class="btn btn-light btn-sm border text-primary small py-1" onclick="usePrompt('Explain the difference between TCP and UDP with real-world examples.')">TCP vs UDP</button>
+      </div>
+
+      <!-- Messages Window -->
+      <div class="chat-container">
+        <div class="chat-messages" id="chatMessages">
+          <!-- Initial AI Greeting -->
+          <div class="chat-bubble chat-bubble-ai">
+            <div class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom">
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary-subtle text-primary fw-semibold px-2 py-1 rounded">
+                  <i class="bi bi-robot me-1"></i>EduSmart AI
+                </span>
+                <small class="text-muted" style="font-size: 0.75rem;">Academic Tutor</small>
+              </div>
+            </div>
+            <div class="ai-content-body">
+              <p class="mb-0">
+                Hello <strong>{{ user.full_name }}</strong>! I am your academic tutor. Ask me to explain difficult concepts, solve step-by-step problems, summarize lectures, or provide exam strategies!
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Input Form -->
+        <div class="chat-input-box">
+          <form id="chatForm" onsubmit="sendMessage(event)">
+            <div class="input-group">
+              <input type="text" id="userInput" class="form-control" placeholder="Ask an academic question (e.g. Explain Binary Search Trees)..." autocomplete="off" required>
+              <button class="btn btn-primary px-4" type="submit" id="sendBtn">
+                <i class="bi bi-send-fill"></i>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const chatMessages = document.getElementById('chatMessages');
+  const userInput = document.getElementById('userInput');
+  const sendBtn = document.getElementById('sendBtn');
+
+  function scrollBottom() {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function renderMarkdown(text) {
+    if (typeof marked !== 'undefined' && marked.parse) {
+      try {
+        return marked.parse(text);
+      } catch (e) {
+        console.warn('Marked parse error:', e);
+      }
+    }
+    // Fallback parser
+    let html = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    html = html.replace(/```([a-zA-Z0-9]*)\n([\s\S]*?)```/g, function(match, lang, code) {
+      return `<pre><code>${code.trim()}</code></pre>`;
+    });
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    html = html.replace(/^### (.*$)/gim, '<h4>$1</h4>');
+    html = html.replace(/^## (.*$)/gim, '<h3>$1</h3>');
+    html = html.replace(/^# (.*$)/gim, '<h3>$1</h3>');
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    html = html.replace(/^---$/gim, '<hr>');
+    html = html.replace(/^\s*[\*\-]\s+(.*$)/gim, '<li>$1</li>');
+    html = html.replace(/\n\n+/g, '<p></p>');
+    html = html.replace(/\n/g, '<br>');
+    return html;
+  }
+
+  function copyText(btn) {
+    const bubble = btn.closest('.chat-bubble-ai');
+    const content = bubble.querySelector('.ai-content-body');
+    const text = content ? content.innerText : bubble.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<i class="bi bi-check2 text-success"></i>';
+      setTimeout(() => { btn.innerHTML = orig; }, 1800);
+    });
+  }
+
+  function clearChat() {
+    chatMessages.innerHTML = `
+      <div class="chat-bubble chat-bubble-ai">
+        <div class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom">
+          <span class="badge bg-primary-subtle text-primary fw-semibold px-2 py-1 rounded">
+            <i class="bi bi-robot me-1"></i>EduSmart AI
+          </span>
+        </div>
+        <div class="ai-content-body">
+          <p class="mb-0">Chat cleared. How can I help you with your studies today?</p>
+        </div>
+      </div>
+    `;
+  }
+
+  function usePrompt(text) {
+    userInput.value = text;
+    userInput.focus();
+  }
+
+  async function sendMessage(e) {
+    e.preventDefault();
+    const query = userInput.value.trim();
+    if (!query) return;
+
+    // 1. Append User Message
+    const userBubble = document.createElement('div');
+    userBubble.className = 'chat-bubble chat-bubble-user';
+    userBubble.innerText = query;
+    chatMessages.appendChild(userBubble);
+
+    userInput.value = '';
+    userInput.disabled = true;
+    sendBtn.disabled = true;
+
+    // 2. Append Loading Indicator Bubble
+    const loadingBubble = document.createElement('div');
+    loadingBubble.className = 'chat-bubble chat-bubble-ai text-muted';
+    loadingBubble.id = 'loadingIndicator';
+    loadingBubble.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span><span class="small fw-semibold">Thinking and formatting response...</span>';
+    chatMessages.appendChild(loadingBubble);
+    scrollBottom();
+
+    try {
+      const response = await fetch("{{ url_for('assistant.ask') }}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: query })
+      });
+
+      const data = await response.json();
+      loadingBubble.remove();
+
+      // 3. Append AI Response Bubble
+      const aiBubble = document.createElement('div');
+      aiBubble.className = 'chat-bubble chat-bubble-ai';
+      
+      const rawText = data.response || "No response received.";
+      const formattedHtml = renderMarkdown(rawText);
+
+      aiBubble.innerHTML = `
+        <div class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary-subtle text-primary fw-semibold px-2 py-1 rounded">
+              <i class="bi bi-robot me-1"></i>EduSmart AI
+            </span>
+            <small class="text-muted" style="font-size: 0.75rem;">Academic Tutor</small>
+          </div>
+          <button class="btn btn-sm btn-link text-muted p-0 copy-btn" onclick="copyText(this)" title="Copy response">
+            <i class="bi bi-clipboard"></i>
+          </button>
+        </div>
+        <div class="ai-content-body">${formattedHtml}</div>
+      `;
+      chatMessages.appendChild(aiBubble);
+
+    } catch (err) {
+      loadingBubble.remove();
+      const errorBubble = document.createElement('div');
+      errorBubble.className = 'chat-bubble chat-bubble-ai border-danger text-danger';
+      errorBubble.innerText = "Error: Unable to connect to the AI tutor service. Please check your internet connection.";
+      chatMessages.appendChild(errorBubble);
+    } finally {
+      userInput.disabled = false;
+      sendBtn.disabled = false;
+      userInput.focus();
+      scrollBottom();
+    }
+  }
+</script>
+{% endblock %}

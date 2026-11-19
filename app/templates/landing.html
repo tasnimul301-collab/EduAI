@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}EduSmart AI - Intelligent Learning and Academic Management System{% endblock %}
+
+{% block guest_content %}
+<div class="row align-items-center py-5">
+  <div class="col-lg-6 mb-5 mb-lg-0">
+    <div class="badge bg-primary-subtle text-primary fw-semibold px-3 py-2 rounded-pill mb-3">
+      🎓 University CSE Capstone Project
+    </div>
+    <h1 class="display-4 fw-extrabold text-dark lh-sm mb-3">
+      Elevate Your Academic Potential with <span class="text-primary">EduSmart AI</span>
+    </h1>
+    <p class="lead text-muted mb-4">
+      An intelligent, all-in-one learning and academic management platform engineered for university students. 
+      Organize courses, generate personalized AI quizzes, track study analytics, and get instant 24/7 academic tutoring.
+    </p>
+    <div class="d-flex flex-wrap gap-3">
+      <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg px-4 shadow-sm">
+        <i class="bi bi-rocket-takeoff-fill me-2"></i>Get Started Free
+      </a>
+      <a href="{{ url_for('auth.login') }}" class="btn btn-outline-secondary btn-lg px-4">
+        <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+      </a>
+    </div>
+
+    <!-- Quick Demo Credentials Box -->
+    <div class="card mt-4 border-primary border-opacity-25 bg-primary bg-opacity-10 p-3">
+      <div class="d-flex align-items-center gap-2 text-primary fw-bold mb-1">
+        <i class="bi bi-key-fill"></i> Quick Demo Access
+      </div>
+      <div class="small text-muted">
+        <strong>Student:</strong> <code>student</code> / <code>student123</code> &nbsp;|&nbsp; 
+        <strong>Admin:</strong> <code>admin</code> / <code>admin123</code>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card shadow-lg border-0 overflow-hidden rounded-4">
+      <div class="card-header bg-dark text-white d-flex align-items-center justify-content-between py-3">
+        <div class="d-flex align-items-center gap-2">
+          <span class="rounded-circle bg-danger d-inline-block" style="width: 12px; height: 12px;"></span>
+          <span class="rounded-circle bg-warning d-inline-block" style="width: 12px; height: 12px;"></span>
+          <span class="rounded-circle bg-success d-inline-block" style="width: 12px; height: 12px;"></span>
+        </div>
+        <small class="text-secondary fw-semibold">EduSmart AI Dashboard Preview</small>
+      </div>
+      <div class="card-body p-4 bg-light">
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <div class="card p-3 border-0 shadow-sm bg-white">
+              <div class="text-muted small">Active Subjects</div>
+              <div class="h4 fw-bold text-primary mb-0">3 Enrolled</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="card p-3 border-0 shadow-sm bg-white">
+              <div class="text-muted small">Study Hours</div>
+              <div class="h4 fw-bold text-success mb-0">12.5 hrs</div>
+            </div>
+          </div>
+        </div>
+        <div class="card p-3 border-0 shadow-sm bg-white mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold small"><i class="bi bi-robot text-primary me-2"></i>AI Study Assistant</span>
+            <span class="badge bg-success-subtle text-success">Online</span>
+          </div>
+          <p class="small text-muted mb-0">
+            "Hello Alex! Ready to review your Algorithms exam questions or practice B+ Tree indexing?"
+          </p>
+        </div>
+        <div class="card p-3 border-0 shadow-sm bg-white">
+          <div class="d-flex justify-content-between small text-muted mb-1">
+            <span>Assignment: Dynamic Programming</span>
+            <span class="text-danger fw-bold">Due in 3 days</span>
+          </div>
+          <div class="progress" style="height: 6px;">
+            <div class="progress-bar bg-primary" style="width: 65%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Features Section -->
+<div class="py-5 border-top">
+  <div class="text-center mb-5">
+    <h2 class="fw-bold">Engineered for Academic Excellence</h2>
+    <p class="text-muted">A comprehensive ecosystem designed to replace fragmented student tools.</p>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="card h-100 p-4 border-0 shadow-sm card-hover">
+        <div class="stat-icon-box bg-primary-subtle text-primary mb-3">
+          <i class="bi bi-patch-question-fill"></i>
+        </div>
+        <h5 class="fw-bold">AI Quiz Generator</h5>
+        <p class="text-muted small">
+          Automatically generate custom Multiple Choice Questions (MCQs) for any topic and difficulty via Gemini AI. Test active recall and review instant feedback.
+        </p>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card h-100 p-4 border-0 shadow-sm card-hover">
+        <div class="stat-icon-box bg-success-subtle text-success mb-3">
+          <i class="bi bi-robot"></i>
+        </div>
+        <h5 class="fw-bold">AI Study Assistant</h5>
+        <p class="text-muted small">
+          Ask academic questions anytime. Get clear step-by-step conceptual breakdowns, exam preparation tips, and verified textbook resource suggestions.
+        </p>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card h-100 p-4 border-0 shadow-sm card-hover">
+        <div class="stat-icon-box bg-info-subtle text-info mb-3">
+          <i class="bi bi-calendar-check-fill"></i>
+        </div>
+        <h5 class="fw-bold">Smart Study Planner</h5>
+        <p class="text-muted small">
+          Schedule tasks with priority flags and deadlines. Filter by daily and weekly schedules to consistently track and improve your completion rate.
+        </p>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card h-100 p-4 border-0 shadow-sm card-hover">
+        <div class="stat-icon-box bg-warning-subtle text-warning mb-3">
+          <i class="bi bi-journal-text"></i>
+        </div>
+        <h5 class="fw-bold">Digital Notes & PDFs</h5>
+        <p class="text-muted small">
+          Organize lecture summaries by subject. Attach PDF handouts and lecture slides, searchable anytime with instant document downloading.
+        </p>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card h-100 p-4 border-0 shadow-sm card-hover">
+        <div class="stat-icon-box bg-purple-subtle text-primary mb-3">
+          <i class="bi bi-bar-chart-line-fill"></i>
+        </div>
+        <h5 class="fw-bold">Academic Analytics</h5>
+        <p class="text-muted small">
+          Visualize your weekly study hours, subject distribution, and historical quiz scores with Chart.js analytics directly inside your dashboard.
+        </p>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card h-100 p-4 border-0 shadow-sm card-hover">
+        <div class="stat-icon-box bg-danger-subtle text-danger mb-3">
+          <i class="bi bi-bell-fill"></i>
+        </div>
+        <h5 class="fw-bold">Deadline Reminders</h5>
+        <p class="text-muted small">
+          Never miss coursework submissions. Dynamic priority badges and automated in-app notifications ensure you submit assignments ahead of deadlines.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

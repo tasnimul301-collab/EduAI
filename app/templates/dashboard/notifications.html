@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - EduSmart AI{% endblock %}
+{% block page_title %}Alert Notifications{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0"><i class="bi bi-bell text-primary me-2"></i>In-App Notifications</h6>
+        <span class="badge bg-light text-muted border">{{ notifications|length }} Total</span>
+      </div>
+
+      {% if notifications %}
+      <div class="d-flex flex-column gap-2">
+        {% for notif in notifications %}
+        <div class="p-3 rounded border {% if not notif.is_read %}bg-light border-primary border-opacity-50{% else %}bg-white border-light-subtle{% endif %} d-flex justify-content-between align-items-start">
+          <div class="d-flex align-items-start gap-3">
+            <div class="stat-icon-box bg-{{ 'danger' if notif.type == 'deadline' else 'primary' }}-subtle text-{{ 'danger' if notif.type == 'deadline' else 'primary' }} mt-1" style="width: 38px; height: 38px; font-size: 1.1rem;">
+              <i class="bi bi-{{ 'alarm' if notif.type == 'deadline' else 'bell' }}"></i>
+            </div>
+            <div>
+              <div class="fw-bold text-dark mb-1">
+                {{ notif.title }}
+                {% if not notif.is_read %}
+                <span class="badge bg-primary text-white ms-2" style="font-size: 0.65rem;">NEW</span>
+                {% endif %}
+              </div>
+              <p class="text-muted small mb-1">{{ notif.message }}</p>
+              <small class="text-secondary" style="font-size: 0.75rem;">{{ notif.created_at.strftime('%b %d, %Y at %I:%M %p') }}</small>
+            </div>
+          </div>
+
+          {% if not notif.is_read %}
+          <form method="POST" action="{{ url_for('dashboard.mark_notification_read', notification_id=notif.id) }}">
+            <button type="submit" class="btn btn-outline-secondary btn-sm" title="Mark as read">
+              <i class="bi bi-check2"></i>
+            </button>
+          </form>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-bell-slash fs-1 d-block mb-2"></i>
+        <h6>No Notifications</h6>
+        <p class="small mb-0">You're all caught up! Deadline reminders and alerts will appear here.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

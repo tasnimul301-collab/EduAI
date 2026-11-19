@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+
+{% block title %}AI Quiz Generator - EduSmart AI{% endblock %}
+{% block page_title %}AI Quiz Generator{% endblock %}
+
+{% block content %}
+<!-- AI Status Alert Banner if not configured -->
+{% if not ai_configured %}
+<div class="alert alert-info border-info shadow-sm mb-4">
+  <div class="d-flex align-items-start gap-3">
+    <i class="bi bi-info-circle-fill fs-4 text-info"></i>
+    <div class="flex-grow-1">
+      <div class="fw-bold mb-1">Running in Offline Academic Mode</div>
+      <div class="small mb-2">
+        Pre-built quizzes for all subjects across <strong>Class 6 through Class 12</strong> are ready to take immediately below! Quizzes generated without an active API key will use the curated offline academic bank.
+      </div>
+      <div class="small text-muted">
+        To enable real-time dynamic AI generation for any new topic, get a free key from 
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" class="fw-semibold text-primary">Google AI Studio (free, 30s)</a>
+        and set <code>GEMINI_API_KEY=your_key</code> in your <code>.env</code> file.
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-4 mb-5">
+  <!-- Quiz Generator Form -->
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm p-4 h-100">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <div class="stat-icon-box bg-primary-subtle text-primary" style="width: 42px; height: 42px; font-size: 1.25rem;">
+          <i class="bi bi-cpu-fill"></i>
+        </div>
+        <div>
+          <h5 class="fw-bold mb-0">Generate AI Quiz</h5>
+          <span class="badge bg-primary-subtle text-primary" style="font-size: 0.7rem;">Class 6 to Class 12 & Higher Ed</span>
+        </div>
+      </div>
+      <p class="small text-muted mb-3">
+        Generate customized Multiple Choice Questions (MCQs) aligned with national curriculum (NCTB) and university standards.
+      </p>
+
+      <form method="POST" action="{{ url_for('quiz.generate') }}" id="quizGenForm">
+        <!-- 1. Class / Grade Selection -->
+        <div class="mb-3">
+          <label class="form-label small fw-semibold d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-mortarboard me-1 text-primary"></i>Class / Academic Level</span>
+            <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.65rem;">Class 6 - 12</span>
+          </label>
+          <select name="class_level" id="classSelect" class="form-select fw-semibold border-primary-subtle">
+            <option value="Class 6">Class 6 (Grade 6)</option>
+            <option value="Class 7">Class 7 (Grade 7)</option>
+            <option value="Class 8">Class 8 (Grade 8 / JSC)</option>
+            <option value="Class 9">Class 9 (SSC 9th Grade)</option>
+            <option value="Class 10" selected>Class 10 (SSC 10th Grade)</option>
+            <option value="Class 11">Class 11 (HSC 1st Year)</option>
+            <option value="Class 12">Class 12 (HSC 2nd Year)</option>
+            <option value="University / General">University / General Higher Ed</option>
+          </select>
+        </div>
+
+        <!-- 2. Subject Selection (Populated dynamically by selected Class) -->
+        <div class="mb-3">
+          <label class="form-label small fw-semibold"><i class="bi bi-book me-1 text-primary"></i>Subject / Course</label>
+          <select name="curriculum_subject" id="subjectSelect" class="form-select">
+            <!-- Dynamically populated via JS -->
+          </select>
+          <!-- Hidden fallback for enrolled university subjects if University selected -->
+          <select name="subject_id" id="enrolledSubjectSelect" class="form-select d-none mt-2">
+            <option value="">-- General Academic --</option>
+            {% for subj in subjects %}
+            <option value="{{ subj.id }}">{{ subj.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- 3. Academic Topic / Chapter -->
+        <div class="mb-3">
+          <label class="form-label small fw-semibold"><i class="bi bi-pencil-square me-1 text-primary"></i>Topic / Chapter Name</label>
+          <input type="text" name="topic" id="topicInput" class="form-control" placeholder="e.g. Periodic Table, Newton's Laws, or Algebra" required>
+          
+          <!-- Quick Topic Suggestions Pills -->
+          <div class="mt-2">
+            <div class="small text-muted mb-1" style="font-size: 0.72rem;">Suggested Topics (Click to insert):</div>
+            <div id="topicPills" class="d-flex flex-wrap gap-1">
+              <!-- Dynamically populated via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Difficulty & Count -->
+        <div class="row g-2 mb-4">
+          <div class="col-6">
+            <label class="form-label small fw-semibold">Difficulty</label>
+            <select name="difficulty" class="form-select">
+              <option value="easy">Easy (Fundamentals)</option>
+              <option value="medium" selected>Medium (Standard)</option>
+              <option value="hard">Hard (Advanced)</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-semibold">Questions</label>
+            <select name="count" class="form-select">
+              <option value="3">3 Questions</option>
+              <option value="5" selected>5 Questions</option>
+              <option value="10">10 Questions</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold" id="genBtn">
+          <i class="bi bi-magic me-2"></i>Generate AI Quiz
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Available Quizzes List -->
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm p-4 h-100 d-flex flex-column">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">
+          <i class="bi bi-journal-check text-primary me-2"></i>Ready-to-Take Quizzes
+        </h5>
+        <span class="badge bg-primary rounded-pill px-3 py-2" id="quizCountBadge">
+          {{ quizzes|length }} Available
+        </span>
+      </div>
+
+      <!-- Class Filter Tabs -->
+      <div class="mb-3 pb-2 border-bottom">
+        <div class="d-flex flex-wrap gap-1" id="classFilterTabs">
+          <button type="button" class="btn btn-sm btn-primary active class-filter-btn" data-class="all">
+            All ({{ quizzes|length }})
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary class-filter-btn" data-class="Class 6">
+            Class 6
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary class-filter-btn" data-class="Class 7">
+            Class 7
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary class-filter-btn" data-class="Class 8">
+            Class 8
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary class-filter-btn" data-class="Class 9">
+            Class 9 (SSC)
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary class-filter-btn" data-class="Class 10">
+            Class 10 (SSC)
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary class-filter-btn" data-class="Class 11">
+            Class 11 (HSC)
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary class-filter-btn" data-class="Class 12">
+            Class 12 (HSC)
+          </button>
+        </div>
+      </div>
+
+      <!-- Search Input -->
+      <div class="input-group input-group-sm mb-3">
+        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+        <input type="text" id="quizSearchInput" class="form-control" placeholder="Search quizzes by topic, subject, or keyword...">
+      </div>
+
+      <!-- Quizzes List (Scrollable) -->
+      <div class="flex-grow-1 overflow-auto pe-1" style="max-height: 480px;" id="quizzesListContainer">
+        {% if quizzes %}
+        <div class="d-flex flex-column gap-2" id="quizItemsList">
+          {% for q in quizzes %}
+          <div class="p-3 rounded border bg-light d-flex justify-content-between align-items-center quiz-item" 
+               data-class="{{ q.class_level or 'General' }}" 
+               data-search="{{ q.title|lower }} {{ q.topic|lower }} {{ (q.class_level or '')|lower }}">
+            <div>
+              <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                <span class="badge {% if 'Class 6' in (q.class_level or '') or 'Class 7' in (q.class_level or '') or 'Class 8' in (q.class_level or '') %}bg-info text-dark{% elif 'Class 9' in (q.class_level or '') or 'Class 10' in (q.class_level or '') %}bg-primary{% elif 'Class 11' in (q.class_level or '') or 'Class 12' in (q.class_level or '') %}bg-purple text-white" style="background-color: #6f42c1;{% else %}bg-secondary{% endif %}" style="font-size: 0.68rem;">
+                  {{ q.class_level or 'General' }}
+                </span>
+                <h6 class="fw-bold mb-0 text-dark">{{ q.title }}</h6>
+                <span class="badge bg-{{ 'success' if q.difficulty == 'easy' else ('warning' if q.difficulty == 'medium' else 'danger') }}-subtle text-{{ 'success' if q.difficulty == 'easy' else ('warning' if q.difficulty == 'medium' else 'danger') }} text-uppercase" style="font-size: 0.62rem;">
+                  {{ q.difficulty }}
+                </span>
+              </div>
+              <div class="small text-muted">
+                <span><i class="bi bi-tag me-1"></i>{{ q.topic }}</span> &bull; 
+                <span>{{ q.total_questions }} Questions</span> &bull; 
+                <span>{{ q.attempts|length }} Attempt(s)</span>
+              </div>
+            </div>
+            <a href="{{ url_for('quiz.take', quiz_id=q.id) }}" class="btn btn-primary btn-sm px-3 flex-shrink-0 ms-2">
+              Take Quiz
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+        <div id="noMatchNotice" class="text-center py-4 text-muted d-none">
+          <i class="bi bi-search fs-3 d-block mb-1"></i>
+          <span class="small">No quizzes found matching this filter or search.</span>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-patch-question fs-1 d-block mb-2"></i>
+          <h6>No Quizzes Available</h6>
+          <p class="small mb-0">Use the generator on the left to create your first assessment.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Past Attempt History -->
+<div class="card border-0 shadow-sm p-4">
+  <h5 class="fw-bold mb-3"><i class="bi bi-clock-history text-secondary me-2"></i>Recent Quiz Attempts</h5>
+  {% if attempts %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Quiz Title</th>
+          <th>Score</th>
+          <th>Percentage</th>
+          <th>Status</th>
+          <th>Date Completed</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for att in attempts %}
+        <tr>
+          <td class="fw-semibold text-dark">{{ att.quiz.title }}</td>
+          <td>{{ att.score }} / {{ att.total_score }}</td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="progress flex-grow-1" style="height: 6px; width: 80px;">
+                <div class="progress-bar bg-{{ 'success' if att.percentage >= 70 else ('warning' if att.percentage >= 50 else 'danger') }}" style="width: {{ att.percentage }}%;"></div>
+              </div>
+              <span class="small fw-bold">{{ att.percentage }}%</span>
+            </div>
+          </td>
+          <td>
+            <span class="badge bg-{{ 'success-subtle text-success' if att.percentage >= 70 else ('warning-subtle text-warning' if att.percentage >= 50 else 'danger-subtle text-danger') }}">
+              {{ 'Mastered' if att.percentage >= 70 else ('Review Needed' if att.percentage >= 50 else 'Needs Study') }}
+            </span>
+          </td>
+          <td class="small text-muted">{{ att.completed_at.strftime('%b %d, %Y at %I:%M %p') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-4 text-muted small">
+    No quiz attempts recorded yet. Take a quiz above to evaluate your knowledge!
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Curriculum data passed from Flask backend
+  const curriculumData = {{ curriculum|tojson }};
+
+  const classSelect = document.getElementById('classSelect');
+  const subjectSelect = document.getElementById('subjectSelect');
+  const enrolledSelect = document.getElementById('enrolledSubjectSelect');
+  const topicInput = document.getElementById('topicInput');
+  const topicPillsContainer = document.getElementById('topicPills');
+
+  function updateSubjectsAndPills() {
+    const selectedClass = classSelect.value;
+    subjectSelect.innerHTML = '';
+    topicPillsContainer.innerHTML = '';
+
+    if (selectedClass === 'University / General' || !curriculumData[selectedClass]) {
+      // University mode
+      subjectSelect.classList.add('d-none');
+      enrolledSelect.classList.remove('d-none');
+      
+      const uniTopics = ['Data Structures', 'Operating Systems', 'Database Normalization', 'Computer Networks', 'Software Engineering'];
+      uniTopics.forEach(t => renderPill(t));
+      return;
+    }
+
+    // Secondary / Higher secondary mode
+    subjectSelect.classList.remove('d-none');
+    enrolledSelect.classList.add('d-none');
+
+    const subjects = curriculumData[selectedClass].subjects;
+    subjects.forEach((subj, idx) => {
+      const opt = document.createElement('option');
+      opt.value = subj;
+      opt.textContent = subj;
+      if (idx === 0) opt.selected = true;
+      subjectSelect.appendChild(opt);
+    });
+
+    updateTopicPills();
+  }
+
+  function updateTopicPills() {
+    const selectedClass = classSelect.value;
+    const selectedSubj = subjectSelect.value;
+    topicPillsContainer.innerHTML = '';
+
+    if (curriculumData[selectedClass] && curriculumData[selectedClass].topics[selectedSubj]) {
+      const topics = curriculumData[selectedClass].topics[selectedSubj];
+      topics.forEach(t => renderPill(t));
+    }
+  }
+
+  function renderPill(topicText) {
+    const pill = document.createElement('button');
+    pill.type = 'button';
+    pill.className = 'btn btn-outline-primary btn-sm py-0 px-2';
+    pill.style.fontSize = '0.72rem';
+    pill.textContent = topicText;
+    pill.addEventListener('click', function() {
+      topicInput.value = topicText;
+      topicInput.focus();
+    });
+    topicPillsContainer.appendChild(pill);
+  }
+
+  classSelect.addEventListener('change', updateSubjectsAndPills);
+  subjectSelect.addEventListener('change', updateTopicPills);
+
+  // Initialize on load
+  updateSubjectsAndPills();
+
+  // Show loading spinner on quiz generation to avoid duplicate clicks
+  const form = document.getElementById('quizGenForm');
+  const btn = document.getElementById('genBtn');
+  if (form && btn) {
+    form.addEventListener('submit', function() {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating AI Quiz...';
+    });
+  }
+
+  // ==========================================
+  // Client-Side Class Filter & Search Filter
+  // ==========================================
+  const filterButtons = document.querySelectorAll('.class-filter-btn');
+  const quizItems = document.querySelectorAll('.quiz-item');
+  const searchInput = document.getElementById('quizSearchInput');
+  const noMatchNotice = document.getElementById('noMatchNotice');
+  const countBadge = document.getElementById('quizCountBadge');
+
+  let currentClassFilter = 'all';
+
+  function applyQuizFilters() {
+    const query = (searchInput.value || '').trim().toLowerCase();
+    let visibleCount = 0;
+
+    quizItems.forEach(item => {
+      const itemClass = item.getAttribute('data-class') || '';
+      const itemSearch = item.getAttribute('data-search') || '';
+
+      const matchesClass = (currentClassFilter === 'all') || (itemClass === currentClassFilter);
+      const matchesQuery = !query || itemSearch.includes(query);
+
+      if (matchesClass && matchesQuery) {
+        item.classList.remove('d-none');
+        item.classList.add('d-flex');
+        visibleCount++;
+      } else {
+        item.classList.remove('d-flex');
+        item.classList.add('d-none');
+      }
+    });
+
+    if (countBadge) {
+      countBadge.textContent = visibleCount + ' Available';
+    }
+
+    if (noMatchNotice) {
+      if (visibleCount === 0) {
+        noMatchNotice.classList.remove('d-none');
+      } else {
+        noMatchNotice.classList.add('d-none');
+      }
+    }
+  }
+
+  filterButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      filterButtons.forEach(b => {
+        b.classList.remove('btn-primary', 'active');
+        b.classList.add('btn-outline-secondary');
+      });
+      this.classList.remove('btn-outline-secondary');
+      this.classList.add('btn-primary', 'active');
+
+      currentClassFilter = this.getAttribute('data-class');
+      applyQuizFilters();
+    });
+  });
+
+  if (searchInput) {
+    searchInput.addEventListener('input', applyQuizFilters);
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Academic Subjects - EduSmart AI{% endblock %}
+{% block page_title %}Academic Subjects{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- Create Subject Form -->
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm p-4 sticky-top" style="top: 80px; z-index: 10;">
+      <h6 class="fw-bold mb-3"><i class="bi bi-plus-circle text-primary me-2"></i>Add Custom Subject</h6>
+      <form method="POST" action="{{ url_for('dashboard.subjects') }}">
+        <input type="hidden" name="action" value="create">
+        
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Class / Academic Level</label>
+          <select name="class_level" class="form-select">
+            <option value="Class 6">Class 6 (Grade 6)</option>
+            <option value="Class 7">Class 7 (Grade 7)</option>
+            <option value="Class 8">Class 8 (Grade 8 / JSC)</option>
+            <option value="Class 9">Class 9 (SSC 9th Grade)</option>
+            <option value="Class 10" selected>Class 10 (SSC 10th Grade)</option>
+            <option value="Class 11">Class 11 (HSC 1st Year)</option>
+            <option value="Class 12">Class 12 (HSC 2nd Year)</option>
+            <option value="University / General">University / General</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Subject / Course Name</label>
+          <input type="text" name="name" class="form-control" placeholder="e.g. Higher Mathematics" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Course Code</label>
+          <input type="text" name="code" class="form-control text-uppercase" placeholder="e.g. HMTH-10">
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label small fw-semibold">Color Tag</label>
+          <div class="d-flex align-items-center gap-2">
+            <input type="color" name="color_hex" class="form-control form-control-color" value="#4F46E5" title="Choose color">
+            <span class="small text-muted">Used for badges and planner categorization</span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 fw-semibold">
+          <i class="bi bi-plus-lg me-1"></i>Create Subject
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Subjects Grid -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+          <h5 class="fw-bold mb-0">Enrolled Subjects & Curriculum</h5>
+          <small class="text-muted">National curriculum standards from Class 6 to Class 12</small>
+        </div>
+        <span class="badge bg-primary rounded-pill px-3 py-2 fs-6" id="subjectCountBadge">
+          {{ subjects|length }} Subjects
+        </span>
+      </div>
+
+      <!-- Class Filter Tabs -->
+      <div class="mb-3 pb-2 border-bottom">
+        <div class="d-flex flex-wrap gap-1" id="subjectFilterTabs">
+          <button type="button" class="btn btn-sm btn-primary active subj-filter-btn" data-class="all">
+            All ({{ subjects|length }})
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary subj-filter-btn" data-class="Class 6">
+            Class 6
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary subj-filter-btn" data-class="Class 7">
+            Class 7
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary subj-filter-btn" data-class="Class 8">
+            Class 8
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary subj-filter-btn" data-class="Class 9">
+            Class 9 (SSC)
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary subj-filter-btn" data-class="Class 10">
+            Class 10 (SSC)
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary subj-filter-btn" data-class="Class 11">
+            Class 11 (HSC)
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary subj-filter-btn" data-class="Class 12">
+            Class 12 (HSC)
+          </button>
+        </div>
+      </div>
+
+      <!-- Real-time Search Input -->
+      <div class="input-group input-group-sm mb-3">
+        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+        <input type="text" id="subjSearchInput" class="form-control" placeholder="Search subjects by name, class, or code...">
+      </div>
+
+      {% if subjects %}
+      <div class="row g-3" id="subjectsGrid">
+        {% for subj in subjects %}
+        <div class="col-md-6 subj-item" 
+             data-class="{{ subj.class_level or 'General' }}" 
+             data-search="{{ subj.name|lower }} {{ (subj.code or '')|lower }} {{ (subj.class_level or '')|lower }}">
+          <div class="card p-3 border-0 shadow-sm border-top border-4 h-100" style="border-top-color: {{ subj.color_hex }} !important; background: #fafafa;">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <div class="d-flex align-items-center gap-1 mb-1">
+                  <span class="badge {% if 'Class 6' in (subj.class_level or '') or 'Class 7' in (subj.class_level or '') or 'Class 8' in (subj.class_level or '') %}bg-info text-dark{% elif 'Class 9' in (subj.class_level or '') or 'Class 10' in (subj.class_level or '') %}bg-primary{% elif 'Class 11' in (subj.class_level or '') or 'Class 12' in (subj.class_level or '') %}bg-purple text-white" style="background-color: #6f42c1;{% else %}bg-secondary{% endif %}" style="font-size: 0.65rem;">
+                    {{ subj.class_level or 'General' }}
+                  </span>
+                  <span class="badge bg-light text-dark border" style="font-size: 0.65rem;">{{ subj.code or 'N/A' }}</span>
+                </div>
+                <h6 class="fw-bold mb-0 text-dark">{{ subj.name }}</h6>
+              </div>
+              <form method="POST" action="{{ url_for('dashboard.subjects') }}" onsubmit="return confirm('Delete this subject?');">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="subject_id" value="{{ subj.id }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm p-1 border-0" title="Delete Subject">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
+            <div class="small text-muted mt-auto d-flex justify-content-between border-top pt-2" style="font-size: 0.75rem;">
+              <span><i class="bi bi-check2-square me-1"></i>{{ subj.tasks|length }} tasks</span>
+              <span><i class="bi bi-file-text me-1"></i>{{ subj.notes|length }} notes</span>
+              <span><i class="bi bi-journal-bookmark me-1"></i>{{ subj.assignments|length }} assignments</span>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <div id="noSubjectMatchNotice" class="text-center py-5 text-muted d-none">
+        <i class="bi bi-search fs-2 d-block mb-2"></i>
+        <h6>No Subjects Found</h6>
+        <p class="small mb-0">No subjects match your selected filter or search query.</p>
+      </div>
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-book fs-1 d-block mb-2 text-secondary"></i>
+        <h6>No Subjects Added Yet</h6>
+        <p class="small mb-0">Add your courses here to organize tasks, notes, and study schedules.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Client-side Class Filter & Search Filter for Subjects
+  const filterButtons = document.querySelectorAll('.subj-filter-btn');
+  const subjItems = document.querySelectorAll('.subj-item');
+  const searchInput = document.getElementById('subjSearchInput');
+  const noMatchNotice = document.getElementById('noSubjectMatchNotice');
+  const countBadge = document.getElementById('subjectCountBadge');
+
+  let currentClassFilter = 'all';
+
+  function applySubjFilters() {
+    const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+    let visibleCount = 0;
+
+    subjItems.forEach(item => {
+      const itemClass = item.getAttribute('data-class') || '';
+      const itemSearch = item.getAttribute('data-search') || '';
+
+      const matchesClass = (currentClassFilter === 'all') || (itemClass === currentClassFilter);
+      const matchesQuery = !query || itemSearch.includes(query);
+
+      if (matchesClass && matchesQuery) {
+        item.classList.remove('d-none');
+        visibleCount++;
+      } else {
+        item.classList.add('d-none');
+      }
+    });
+
+    if (countBadge) {
+      countBadge.textContent = visibleCount + ' Subjects';
+    }
+
+    if (noMatchNotice) {
+      if (visibleCount === 0) {
+        noMatchNotice.classList.remove('d-none');
+      } else {
+        noMatchNotice.classList.add('d-none');
+      }
+    }
+  }
+
+  filterButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      filterButtons.forEach(b => {
+        b.classList.remove('btn-primary', 'active');
+        b.classList.add('btn-outline-secondary');
+      });
+      this.classList.remove('btn-outline-secondary');
+      this.classList.add('btn-primary', 'active');
+
+      currentClassFilter = this.getAttribute('data-class');
+      applySubjFilters();
+    });
+  });
+
+  if (searchInput) {
+    searchInput.addEventListener('input', applySubjFilters);
+  }
+</script>
+{% endblock %}

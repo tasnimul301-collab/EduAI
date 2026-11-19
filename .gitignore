@@ -1,0 +1,30 @@
+# Virtual Environment
+venv/
+env/
+.venv/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables
+.env
+
+# SQLite Database
+instance/
+*.db
+*.sqlite3
+
+# Uploaded Files
+uploads/
+app/static/uploads/
+!uploads/.gitkeep
+
+# IDE configuration
+.vscode/
+.idea/
+
+# Operating System files
+.DS_Store
+Thumbs.db
