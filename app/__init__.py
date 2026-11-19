@@ -89,7 +89,56 @@ def create_app(config_name: str = "default") -> Flask:
         db.session.rollback()
         return render_template("errors/500.html"), 500
 
+    # Auto-initialize database tables and seed data for production and development
+    if config_name != "testing":
+        _auto_init_database(app)
+
     return app
+
+
+def _auto_init_database(app: Flask):
+    """Ensure database tables exist, migrations are applied, and demo data is seeded."""
+    with app.app_context():
+        try:
+            db.create_all()
+
+            # Ensure class_level column exists in quizzes and subjects for SQLite
+            from sqlalchemy import text
+            for table_name in ["quizzes", "subjects"]:
+                try:
+                    db.session.execute(text(f"ALTER TABLE {table_name} ADD COLUMN class_level VARCHAR(50) DEFAULT 'General'"))
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
+
+            from app.models.user import User
+            if not User.query.filter_by(username="admin").first():
+                admin = User(
+                    username="admin",
+                    email="admin@edusmart.ai",
+                    full_name="System Administrator",
+                    role="admin",
+                    bio="EduSmart AI Administrator",
+                )
+                admin.set_password("admin123")
+                db.session.add(admin)
+
+                student = User(
+                    username="student",
+                    email="student@university.edu",
+                    full_name="Alex Johnson",
+                    role="student",
+                    bio="High School & University Student",
+                )
+                student.set_password("student123")
+                db.session.add(student)
+                db.session.commit()
+
+                from app.utils.curriculum import seed_class_quizzes_for_user, seed_class_subjects_for_user
+                seed_class_quizzes_for_user(student.id)
+                seed_class_subjects_for_user(student.id)
+        except Exception as e:
+            app.logger.warning(f"Database auto-initialization notice: {e}")
 
 
 # Expose application instance for WSGI servers running 'gunicorn app:app'

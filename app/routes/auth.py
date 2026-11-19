@@ -68,9 +68,12 @@ def register():
         db.session.commit()
 
         # Seed pre-built curriculum quizzes and subjects for Class 6 to 12
-        from app.utils.curriculum import seed_class_quizzes_for_user, seed_class_subjects_for_user
-        seed_class_quizzes_for_user(new_user.id)
-        seed_class_subjects_for_user(new_user.id)
+        try:
+            from app.utils.curriculum import seed_class_quizzes_for_user, seed_class_subjects_for_user
+            seed_class_quizzes_for_user(new_user.id)
+            seed_class_subjects_for_user(new_user.id)
+        except Exception:
+            db.session.rollback()
 
         log_activity(f"User registered with role: {role}", "Auth", new_user.id)
         flash("Registration successful! You may now log in.", "success")
