@@ -16,7 +16,10 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 def register():
     """Register a new student or administrator account."""
     if "user_id" in session:
-        return redirect(url_for("dashboard.index"))
+        user = get_current_user()
+        if user:
+            return redirect(url_for("dashboard.index"))
+        session.clear()
 
     if request.method == "POST":
         username = request.form.get("username", "").strip()
@@ -86,7 +89,10 @@ def register():
 def login():
     """Authenticate existing users and initialize session."""
     if "user_id" in session:
-        return redirect(url_for("dashboard.index"))
+        user = get_current_user()
+        if user:
+            return redirect(url_for("dashboard.index"))
+        session.clear()
 
     if request.method == "POST":
         identifier = request.form.get("identifier", "").strip()

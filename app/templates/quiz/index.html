@@ -31,90 +31,182 @@
     <div class="card border-0 shadow-sm p-4 h-100">
       <div class="d-flex align-items-center gap-2 mb-2">
         <div class="stat-icon-box bg-primary-subtle text-primary" style="width: 42px; height: 42px; font-size: 1.25rem;">
-          <i class="bi bi-cpu-fill"></i>
+          <i class="bi bi-patch-plus-fill"></i>
         </div>
         <div>
-          <h5 class="fw-bold mb-0">Generate AI Quiz</h5>
-          <span class="badge bg-danger-subtle text-danger" style="font-size: 0.7rem;">Admin Control (Class 5 - 12)</span>
+          <h5 class="fw-bold mb-0">Admin Quiz Management</h5>
+          <span class="badge bg-danger-subtle text-danger" style="font-size: 0.7rem;">Admin Only (Class 5 - 12)</span>
         </div>
       </div>
       <p class="small text-muted mb-3">
-        Generate customized Multiple Choice Questions (MCQs) aligned with national curriculum (NCTB) and university standards.
+        Create evaluation quizzes using AI or write questions manually. Quizzes will immediately appear in the student panel.
       </p>
 
-      <form method="POST" action="{{ url_for('quiz.generate') }}" id="quizGenForm">
-        <!-- 1. Class / Grade Selection -->
-        <div class="mb-3">
-          <label class="form-label small fw-semibold d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-mortarboard me-1 text-primary"></i>Class / Academic Level</span>
-            <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.65rem;">Class 5 - 12</span>
-          </label>
-          <select name="class_level" id="classSelect" class="form-select fw-semibold border-primary-subtle">
-            <option value="Class 5">Class 5 (Primary Grade 5)</option>
-            <option value="Class 6">Class 6 (Grade 6)</option>
-            <option value="Class 7">Class 7 (Grade 7)</option>
-            <option value="Class 8">Class 8 (Grade 8 / JSC)</option>
-            <option value="Class 9">Class 9 (SSC 9th Grade)</option>
-            <option value="Class 10" selected>Class 10 (SSC 10th Grade)</option>
-            <option value="Class 11">Class 11 (HSC 1st Year)</option>
-            <option value="Class 12">Class 12 (HSC 2nd Year)</option>
-            <option value="University / General">University / General Higher Ed</option>
-          </select>
-        </div>
+      <!-- Nav Tabs for AI vs Manual -->
+      <ul class="nav nav-pills nav-fill mb-3" id="quizCreatorTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active py-1 small fw-bold" id="ai-tab" data-bs-toggle="pill" data-bs-target="#aiQuizPane" type="button" role="tab">
+            <i class="bi bi-magic me-1"></i>AI Generator
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link py-1 small fw-bold" id="manual-tab" data-bs-toggle="pill" data-bs-target="#manualQuizPane" type="button" role="tab">
+            <i class="bi bi-pencil-square me-1"></i>Manual Creator
+          </button>
+        </li>
+      </ul>
 
-        <!-- 2. Subject Selection (Populated dynamically by selected Class) -->
-        <div class="mb-3">
-          <label class="form-label small fw-semibold"><i class="bi bi-book me-1 text-primary"></i>Subject / Course</label>
-          <select name="curriculum_subject" id="subjectSelect" class="form-select">
-            <!-- Dynamically populated via JS -->
-          </select>
-          <!-- Hidden fallback for enrolled university subjects if University selected -->
-          <select name="subject_id" id="enrolledSubjectSelect" class="form-select d-none mt-2">
-            <option value="">-- General Academic --</option>
-            {% for subj in subjects %}
-            <option value="{{ subj.id }}">{{ subj.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <!-- 3. Academic Topic / Chapter -->
-        <div class="mb-3">
-          <label class="form-label small fw-semibold"><i class="bi bi-pencil-square me-1 text-primary"></i>Topic / Chapter Name</label>
-          <input type="text" name="topic" id="topicInput" class="form-control" placeholder="e.g. Periodic Table, Newton's Laws, or Algebra" required>
-          
-          <!-- Quick Topic Suggestions Pills -->
-          <div class="mt-2">
-            <div class="small text-muted mb-1" style="font-size: 0.72rem;">Suggested Topics (Click to insert):</div>
-            <div id="topicPills" class="d-flex flex-wrap gap-1">
-              <!-- Dynamically populated via JS -->
+      <div class="tab-content" id="quizCreatorTabContent">
+        <!-- Tab 1: AI Quiz Generator -->
+        <div class="tab-pane fade show active" id="aiQuizPane" role="tabpanel">
+          <form method="POST" action="{{ url_for('quiz.generate') }}" id="quizGenForm">
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Class / Academic Level</label>
+              <select name="class_level" id="classSelect" class="form-select fw-semibold border-primary-subtle">
+                <option value="Class 5">Class 5 (Primary Grade 5)</option>
+                <option value="Class 6">Class 6 (Grade 6)</option>
+                <option value="Class 7">Class 7 (Grade 7)</option>
+                <option value="Class 8">Class 8 (Grade 8 / JSC)</option>
+                <option value="Class 9">Class 9 (SSC 9th Grade)</option>
+                <option value="Class 10" selected>Class 10 (SSC 10th Grade)</option>
+                <option value="Class 11">Class 11 (HSC 1st Year)</option>
+                <option value="Class 12">Class 12 (HSC 2nd Year)</option>
+                <option value="University / General">University / General Higher Ed</option>
+              </select>
             </div>
-          </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Subject / Course</label>
+              <select name="curriculum_subject" id="subjectSelect" class="form-select">
+                <!-- Dynamically populated via JS -->
+              </select>
+              <select name="subject_id" id="enrolledSubjectSelect" class="form-select d-none mt-2">
+                <option value="">-- General Academic --</option>
+                {% for subj in subjects %}
+                <option value="{{ subj.id }}">{{ subj.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Topic / Chapter Name</label>
+              <input type="text" name="topic" id="topicInput" class="form-control" placeholder="e.g. Periodic Table, Newton's Laws" required>
+              <div class="mt-2">
+                <div class="small text-muted mb-1" style="font-size: 0.72rem;">Suggested Topics:</div>
+                <div id="topicPills" class="d-flex flex-wrap gap-1"></div>
+              </div>
+            </div>
+
+            <div class="row g-2 mb-4">
+              <div class="col-6">
+                <label class="form-label small fw-semibold">Difficulty</label>
+                <select name="difficulty" class="form-select">
+                  <option value="easy">Easy (Fundamentals)</option>
+                  <option value="medium" selected>Medium (Standard)</option>
+                  <option value="hard">Hard (Advanced)</option>
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-semibold">Questions Count</label>
+                <select name="count" class="form-select">
+                  <option value="5" selected>5 Questions</option>
+                  <option value="8">8 Questions</option>
+                  <option value="10">10 Questions</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold" id="genBtn">
+              <i class="bi bi-magic me-2"></i>Generate AI Quiz
+            </button>
+          </form>
         </div>
 
-        <!-- 4. Difficulty & Count -->
-        <div class="row g-2 mb-4">
-          <div class="col-6">
-            <label class="form-label small fw-semibold">Difficulty</label>
-            <select name="difficulty" class="form-select">
-              <option value="easy">Easy (Fundamentals)</option>
-              <option value="medium" selected>Medium (Standard)</option>
-              <option value="hard">Hard (Advanced)</option>
-            </select>
-          </div>
-          <div class="col-6">
-            <label class="form-label small fw-semibold">Questions Count</label>
-            <select name="count" class="form-select">
-              <option value="5" selected>5 Questions</option>
-              <option value="8">8 Questions</option>
-              <option value="10">10 Questions</option>
-            </select>
-          </div>
-        </div>
+        <!-- Tab 2: Manual Quiz Creator -->
+        <div class="tab-pane fade" id="manualQuizPane" role="tabpanel">
+          <form method="POST" action="{{ url_for('quiz.create_manual') }}" id="manualQuizForm">
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Quiz Title</label>
+              <input type="text" name="title" class="form-control form-control-sm" placeholder="e.g. Trigonometry Mid-term Quiz" required>
+            </div>
+            <div class="row g-2 mb-2">
+              <div class="col-6">
+                <label class="form-label small fw-semibold">Class Level</label>
+                <select name="class_level" class="form-select form-select-sm">
+                  <option value="Class 5">Class 5</option>
+                  <option value="Class 6">Class 6</option>
+                  <option value="Class 7">Class 7</option>
+                  <option value="Class 8">Class 8</option>
+                  <option value="Class 9">Class 9</option>
+                  <option value="Class 10" selected>Class 10</option>
+                  <option value="Class 11">Class 11</option>
+                  <option value="Class 12">Class 12</option>
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-semibold">Subject</label>
+                <input type="text" name="subject_name" class="form-control form-control-sm" placeholder="e.g. Mathematics" required>
+              </div>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label small fw-semibold">Topic / Chapter</label>
+                <input type="text" name="topic" class="form-control form-control-sm" placeholder="e.g. Chapter 9">
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-semibold">Difficulty</label>
+                <select name="difficulty" class="form-select form-select-sm">
+                  <option value="easy">Easy</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+            </div>
 
-        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold" id="genBtn">
-          <i class="bi bi-magic me-2"></i>Generate AI Quiz
-        </button>
-      </form>
+            <!-- Dynamic Question Containers -->
+            <div id="manualQuestionsContainer" class="d-flex flex-column gap-3 mb-3">
+              <!-- Question 1 -->
+              <div class="p-3 border rounded bg-light manual-q-card" data-idx="1">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="fw-bold small text-primary">Question #1</span>
+                </div>
+                <div class="mb-2">
+                  <input type="text" name="q_text_1" class="form-control form-control-sm" placeholder="Question statement..." required>
+                </div>
+                <div class="row g-1 mb-2">
+                  <div class="col-6"><input type="text" name="opt_a_1" class="form-control form-control-sm" placeholder="(A) Option A" required></div>
+                  <div class="col-6"><input type="text" name="opt_b_1" class="form-control form-control-sm" placeholder="(B) Option B" required></div>
+                  <div class="col-6"><input type="text" name="opt_c_1" class="form-control form-control-sm" placeholder="(C) Option C" required></div>
+                  <div class="col-6"><input type="text" name="opt_d_1" class="form-control form-control-sm" placeholder="(D) Option D" required></div>
+                </div>
+                <div class="row g-2">
+                  <div class="col-5">
+                    <label class="form-label small mb-1" style="font-size: 0.7rem;">Correct Answer</label>
+                    <select name="correct_1" class="form-select form-select-sm">
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                      <option value="C">C</option>
+                      <option value="D">D</option>
+                    </select>
+                  </div>
+                  <div class="col-7">
+                    <label class="form-label small mb-1" style="font-size: 0.7rem;">Explanation</label>
+                    <input type="text" name="explanation_1" class="form-control form-control-sm" placeholder="Short rationale...">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button type="button" class="btn btn-outline-secondary btn-sm w-100 mb-3" onclick="addManualQuestion()">
+              <i class="bi bi-plus-circle me-1"></i>Add Another Question
+            </button>
+
+            <button type="submit" class="btn btn-success w-100 py-2 fw-semibold">
+              <i class="bi bi-check-circle me-1"></i>Publish Manual Quiz
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
   {% endif %}
@@ -200,10 +292,17 @@
                 <i class="bi bi-clock me-1"></i>Est. {{ q.total_questions * 2 }} mins
               </div>
             </div>
-            <div>
+            <div class="d-flex align-items-center gap-2">
               <a href="{{ url_for('quiz.take', quiz_id=q.id) }}" class="btn btn-primary btn-sm px-3 shadow-sm text-nowrap">
                 <i class="bi bi-play-circle me-1"></i>Start Quiz
               </a>
+              {% if user.role == 'admin' %}
+              <form method="POST" action="{{ url_for('quiz.delete_quiz', quiz_id=q.id) }}" class="d-inline" onsubmit="return confirm('Delete this quiz?');">
+                <button type="submit" class="btn btn-outline-danger btn-sm px-2" title="Delete Quiz">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+              {% endif %}
             </div>
           </div>
           {% endfor %}
@@ -355,6 +454,51 @@
 
     // Initialize on load
     updateSubjectsAndPills();
+  }
+
+  // Add Dynamic Question Card for Manual Quiz Form
+  let manualQCount = 1;
+  function addManualQuestion() {
+    manualQCount++;
+    const container = document.getElementById('manualQuestionsContainer');
+    if (!container) return;
+
+    const qCard = document.createElement('div');
+    qCard.className = 'p-3 border rounded bg-light manual-q-card';
+    qCard.setAttribute('data-idx', manualQCount);
+    qCard.innerHTML = `
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="fw-bold small text-primary">Question #${manualQCount}</span>
+        <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2" onclick="this.closest('.manual-q-card').remove()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="mb-2">
+        <input type="text" name="q_text_${manualQCount}" class="form-control form-control-sm" placeholder="Question statement..." required>
+      </div>
+      <div class="row g-1 mb-2">
+        <div class="col-6"><input type="text" name="opt_a_${manualQCount}" class="form-control form-control-sm" placeholder="(A) Option A" required></div>
+        <div class="col-6"><input type="text" name="opt_b_${manualQCount}" class="form-control form-control-sm" placeholder="(B) Option B" required></div>
+        <div class="col-6"><input type="text" name="opt_c_${manualQCount}" class="form-control form-control-sm" placeholder="(C) Option C" required></div>
+        <div class="col-6"><input type="text" name="opt_d_${manualQCount}" class="form-control form-control-sm" placeholder="(D) Option D" required></div>
+      </div>
+      <div class="row g-2">
+        <div class="col-5">
+          <label class="form-label small mb-1" style="font-size: 0.7rem;">Correct Answer</label>
+          <select name="correct_${manualQCount}" class="form-select form-select-sm">
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+          </select>
+        </div>
+        <div class="col-7">
+          <label class="form-label small mb-1" style="font-size: 0.7rem;">Explanation</label>
+          <input type="text" name="explanation_${manualQCount}" class="form-control form-control-sm" placeholder="Short rationale...">
+        </div>
+      </div>
+    `;
+    container.appendChild(qCard);
   }
 
   // Show loading spinner on quiz generation to avoid duplicate clicks

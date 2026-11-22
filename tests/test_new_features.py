@@ -240,6 +240,88 @@ class TestNewFeatures(unittest.TestCase):
         self.assertIn(b"Class 5", res.data)
         self.assertIn(b"Primary Science", res.data)
 
+    def test_stale_session_redirects_cleanly_without_500(self):
+        """Verify that visitors with stale or deleted session cookies do not crash with 500 error."""
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = 9999999
+        res = self.client.get("/", follow_redirects=True)
+        self.assertEqual(res.status_code, 200)
+        self.assertNotIn(b"500 Internal Server Error", res.data)
+
+        res_dash = self.client.get("/dashboard", follow_redirects=True)
+        self.assertEqual(res_dash.status_code, 200)
+        self.assertNotIn(b"500 Internal Server Error", res_dash.data)
+
+    def test_admin_manual_creations_and_leaderboard(self):
+        """Test that admin can manually create quiz, flashcards, and CQ, and leaderboard calculates composite scores."""
+        # Create admin user
+        admin = User(username="adminuser", email="admin@test.com", role="admin")
+        admin.set_password("adminpass")
+        db.session.add(admin)
+        db.session.commit()
+
+        # Login as admin
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = admin.id
+            sess["role"] = "admin"
+
+        # 1. Admin manual quiz creation
+        res_q = self.client.post(
+            "/quiz/create-manual",
+            data={
+                "title": "Algebra Unit 1",
+                "class_level": "Class 10",
+                "subject_name": "Mathematics",
+                "difficulty": "medium",
+                "q_text_1": "What is x if 2x + 4 = 10?",
+                "opt_a_1": "2",
+                "opt_b_1": "3",
+                "opt_c_1": "4",
+                "opt_d_1": "5",
+                "correct_1": "B",
+                "explanation_1": "2x = 6 => x = 3",
+            },
+            follow_redirects=True,
+        )
+        self.assertEqual(res_q.status_code, 200)
+        self.assertIn(b"Algebra Unit 1", res_q.data)
+
+        # 2. Admin manual flashcard deck creation
+        res_fc = self.client.post(
+            "/flashcards/create-manual",
+            data={
+                "title": "Physics Laws",
+                "class_level": "Class 10",
+                "subject_name": "Physics",
+                "topic": "Mechanics",
+                "front_1": "What is F=ma?",
+                "back_1": "Newton second law",
+                "hint_1": "Force",
+            },
+            follow_redirects=True,
+        )
+        self.assertEqual(res_fc.status_code, 200)
+
+        # 3. Admin manual CQ creation
+        res_cq = self.client.post(
+            "/cq/create-manual",
+            data={
+                "class_level": "Class 10",
+                "subject_name": "Chemistry",
+                "chapter_topic": "Acids and Bases",
+                "stimulus": "A student tested lemon juice with litmus paper.",
+                "question_a": "What is pH?",
+                "answer_a": "Negative log of H+ concentration",
+            },
+            follow_redirects=True,
+        )
+        self.assertEqual(res_cq.status_code, 200)
+
+        # 4. Check leaderboard page
+        res_lb = self.client.get("/leaderboard")
+        self.assertEqual(res_lb.status_code, 200)
+        self.assertIn(b"Total Score", res_lb.data)
+
 
 if __name__ == "__main__":
     unittest.main()

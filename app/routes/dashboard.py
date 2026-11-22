@@ -42,7 +42,10 @@ def favicon():
 def index():
     """Landing page for visitors; redirects authenticated users to their dashboard."""
     if "user_id" in session:
-        return redirect(url_for("dashboard.dashboard"))
+        user = get_current_user()
+        if user:
+            return redirect(url_for("dashboard.dashboard"))
+        session.clear()
     return render_template("landing.html")
 
 
@@ -71,18 +74,51 @@ def dashboard():
 @dashboard_bp.route("/leaderboard")
 @login_required
 def leaderboard():
-    """Display real-time student leaderboard, points, and achievement rankings."""
+    """Display real-time student leaderboard aggregating quiz, assignment, and flashcard performance."""
     user = get_current_user()
     user.update_streak()
     db.session.commit()
 
     from app.models.user import User
-    top_students = (
-        User.query.filter_by(role="student")
-        .order_by(User.total_points.desc(), User.streak_count.desc())
-        .limit(25)
-        .all()
-    )
+    from app.models.quiz import QuizAttempt
+    from app.models.assignment import Assignment
+    from app.models.flashcard import Flashcard, FlashcardDeck
+
+    all_students = User.query.filter_by(role="student").all()
+    student_stats = []
+
+    for s in all_students:
+        # 1. Quiz points: sum of all quiz attempt scores * 10
+        attempts = QuizAttempt.query.filter_by(user_id=s.id).all()
+        quiz_pts = sum(att.score * 10 for att in attempts)
+
+        # 2. Assignment points: submitted coursework * 20 pts
+        sub_assignments = Assignment.query.filter_by(user_id=s.id, status="submitted").count()
+        assign_pts = sub_assignments * 20
+
+        # 3. Flashcards points: mastered cards * 5 pts
+        mastered_fc = Flashcard.query.join(FlashcardDeck).filter(
+            FlashcardDeck.user_id == s.id, Flashcard.is_mastered == True
+        ).count()
+        fc_pts = mastered_fc * 5
+
+        # 4. Streak points: 15 pts per active day
+        streak_pts = (s.streak_count or 1) * 15
+
+        # Composite Total Points
+        base_points = s.total_points if (s.total_points and s.total_points > 50) else 50
+        composite_pts = quiz_pts + assign_pts + fc_pts + streak_pts + base_points
+
+        s.computed_quiz_pts = quiz_pts
+        s.computed_assign_pts = assign_pts
+        s.computed_fc_pts = fc_pts
+        s.computed_streak_pts = streak_pts
+        s.computed_total_pts = composite_pts
+        student_stats.append(s)
+
+    # Sort students by composite points descending
+    student_stats.sort(key=lambda x: (x.computed_total_pts, x.streak_count), reverse=True)
+    top_students = student_stats[:25]
 
     return render_template(
         "dashboard/leaderboard.html",

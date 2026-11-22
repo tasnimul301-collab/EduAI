@@ -46,7 +46,7 @@
       <div class="fs-1 mb-1">🥈</div>
       <div class="badge bg-secondary-subtle text-secondary px-3 py-1 rounded-pill mb-2">2nd Place</div>
       <h6 class="fw-bold mb-1 text-dark">{{ top_students[1].full_name or top_students[1].username }}</h6>
-      <div class="text-primary fw-bold fs-5 mb-1">⚡ {{ top_students[1].total_points }} pts</div>
+      <div class="text-primary fw-bold fs-5 mb-1">⚡ {{ top_students[1].computed_total_pts or top_students[1].total_points }} pts</div>
       <div class="small text-muted mb-2">🔥 {{ top_students[1].streak_count }} day streak</div>
       <div class="d-flex flex-wrap justify-content-center gap-1">
         {% for b in top_students[1].get_badges_list()[:2] %}
@@ -66,7 +66,7 @@
       <div class="fs-1 mb-1 mt-2">🥇</div>
       <div class="badge bg-warning-subtle text-warning px-3 py-1 rounded-pill mb-2 fw-bold">1st Place Champion</div>
       <h5 class="fw-bold mb-1 text-dark">{{ top_students[0].full_name or top_students[0].username }}</h5>
-      <div class="text-primary fw-extrabold fs-4 mb-1">⚡ {{ top_students[0].total_points }} pts</div>
+      <div class="text-primary fw-extrabold fs-4 mb-1">⚡ {{ top_students[0].computed_total_pts or top_students[0].total_points }} pts</div>
       <div class="small text-muted mb-2">🔥 {{ top_students[0].streak_count }} day streak</div>
       <div class="d-flex flex-wrap justify-content-center gap-1">
         {% for b in top_students[0].get_badges_list()[:3] %}
@@ -83,7 +83,7 @@
       <div class="fs-1 mb-1">🥉</div>
       <div class="badge bg-warning-subtle text-dark px-3 py-1 rounded-pill mb-2">3rd Place</div>
       <h6 class="fw-bold mb-1 text-dark">{{ top_students[2].full_name or top_students[2].username }}</h6>
-      <div class="text-primary fw-bold fs-5 mb-1">⚡ {{ top_students[2].total_points }} pts</div>
+      <div class="text-primary fw-bold fs-5 mb-1">⚡ {{ top_students[2].computed_total_pts or top_students[2].total_points }} pts</div>
       <div class="small text-muted mb-2">🔥 {{ top_students[2].streak_count }} day streak</div>
       <div class="d-flex flex-wrap justify-content-center gap-1">
         {% for b in top_students[2].get_badges_list()[:2] %}
@@ -109,11 +109,14 @@
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light small text-muted">
             <tr>
-              <th scope="col" style="width: 70px;">Rank</th>
+              <th scope="col" style="width: 60px;">Rank</th>
               <th scope="col">Student</th>
-              <th scope="col" class="text-center">Daily Streak</th>
-              <th scope="col" class="text-center">Points</th>
-              <th scope="col">Badges Unlocked</th>
+              <th scope="col" class="text-center" title="Points from Quizzes">🎯 Quiz Pts</th>
+              <th scope="col" class="text-center" title="Points from Submitted Assignments">📝 Assignment</th>
+              <th scope="col" class="text-center" title="Points from Mastered Flashcards">🗂️ Flashcards</th>
+              <th scope="col" class="text-center">🔥 Streak</th>
+              <th scope="col" class="text-center text-primary fw-bold">⚡ Total Score</th>
+              <th scope="col">Badges</th>
             </tr>
           </thead>
           <tbody>
@@ -144,22 +147,31 @@
                 </div>
               </td>
               <td class="text-center">
+                <span class="badge bg-primary-subtle text-primary">{{ s.computed_quiz_pts or 0 }}</span>
+              </td>
+              <td class="text-center">
+                <span class="badge bg-success-subtle text-success">{{ s.computed_assign_pts or 0 }}</span>
+              </td>
+              <td class="text-center">
+                <span class="badge bg-info-subtle text-info">{{ s.computed_fc_pts or 0 }}</span>
+              </td>
+              <td class="text-center">
                 <span class="badge bg-danger-subtle text-danger px-2 py-1">
                   🔥 {{ s.streak_count }}d
                 </span>
               </td>
-              <td class="text-center fw-bold text-primary">
-                ⚡ {{ s.total_points }}
+              <td class="text-center fw-bold text-primary fs-6">
+                ⚡ {{ s.computed_total_pts or s.total_points }}
               </td>
               <td>
                 <div class="d-flex flex-wrap gap-1">
                   {% set badges = s.get_badges_list() %}
                   {% if badges %}
-                    {% for b in badges[:3] %}
+                    {% for b in badges[:2] %}
                     <span class="badge bg-light text-secondary border small">{{ b }}</span>
                     {% endfor %}
-                    {% if badges|length > 3 %}
-                    <span class="badge bg-light text-muted small">+{{ badges|length - 3 }}</span>
+                    {% if badges|length > 2 %}
+                    <span class="badge bg-light text-muted small">+{{ badges|length - 2 }}</span>
                     {% endif %}
                   {% else %}
                     <span class="text-muted small">None yet</span>

@@ -166,6 +166,55 @@ def generate():
     return redirect(url_for("cq.view_cq", cq_id=new_cq.id))
 
 
+@cq_bp.route("/create-manual", methods=["POST"])
+@login_required
+def create_manual():
+    """Manually add a Board-style Creative Question (Admin only)."""
+    user = get_current_user()
+    if user.role != "admin":
+        flash("Only administrators have permission to add Creative Questions.", "danger")
+        return redirect(url_for("cq.index"))
+
+    class_level = request.form.get("class_level", "Class 10").strip()
+    subject_name = request.form.get("subject_name", "General Science").strip()
+    topic = request.form.get("chapter_topic", "").strip() or "General Chapter"
+    stimulus = request.form.get("stimulus", "").strip()
+
+    q_a = request.form.get("question_a", "").strip()
+    ans_a = request.form.get("answer_a", "").strip()
+    q_b = request.form.get("question_b", "").strip()
+    ans_b = request.form.get("answer_b", "").strip()
+    q_c = request.form.get("question_c", "").strip()
+    ans_c = request.form.get("answer_c", "").strip()
+    q_d = request.form.get("question_d", "").strip()
+    ans_d = request.form.get("answer_d", "").strip()
+
+    if not stimulus or not q_a:
+        flash("Stimulus and Question (ক) are required.", "warning")
+        return redirect(url_for("cq.index"))
+
+    new_cq = CreativeQuestion(
+        user_id=user.id,
+        class_level=class_level,
+        subject_name=subject_name,
+        chapter_topic=topic,
+        stimulus=stimulus,
+        question_a=q_a,
+        answer_a=ans_a or "উত্তর যোগ করা হয়নি",
+        question_b=q_b or "খ. অনুধাবনমূলক প্রশ্ন",
+        answer_b=ans_b or "উত্তর যোগ করা হয়নি",
+        question_c=q_c or "গ. প্রয়োগমূলক প্রশ্ন",
+        answer_c=ans_c or "উত্তর যোগ করা হয়নি",
+        question_d=q_d or "ঘ. উচ্চতর দক্ষতামূলক প্রশ্ন",
+        answer_d=ans_d or "উত্তর যোগ করা হয়নি",
+    )
+    db.session.add(new_cq)
+    db.session.commit()
+    log_activity(f"Manually created CQ on '{topic}' ({class_level})", "Creative Question", user.id)
+    flash(f"Creative Question for {class_level} ({subject_name}) created successfully!", "success")
+    return redirect(url_for("cq.view_cq", cq_id=new_cq.id))
+
+
 @cq_bp.route("/delete/<int:cq_id>", methods=["POST"])
 @login_required
 def delete_cq(cq_id):

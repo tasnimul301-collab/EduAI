@@ -42,85 +42,164 @@
 </div>
 
 <div class="row g-4 mb-5">
-  <!-- Generate New Deck Form -->
-  <div class="col-lg-4">
+  {% if user.role == 'admin' %}
+  <!-- Admin Deck Creation Card: Dual Tabs (AI Generator & Manual Deck Creator) -->
+  <div class="col-lg-5">
     <div class="card border-0 shadow-sm p-4 sticky-top" style="top: 80px; z-index: 10;">
       <div class="d-flex align-items-center gap-2 mb-2">
         <div class="stat-icon-box bg-primary-subtle text-primary rounded-circle" style="width: 38px; height: 38px;">
-          <i class="bi bi-magic"></i>
+          <i class="bi bi-stack"></i>
         </div>
-        <h6 class="fw-bold mb-0">Generate AI Flashcard Deck</h6>
+        <div>
+          <h6 class="fw-bold mb-0">Create Flashcard Deck</h6>
+          <span class="badge bg-danger-subtle text-danger" style="font-size: 0.65rem;">Administrator Control</span>
+        </div>
       </div>
       <p class="small text-muted mb-3">
-        Generate active-recall question and answer cards for Class 6-12 chapters or university subjects.
+        Generate active-recall question & answer decks via AI or build custom revision cards manually.
       </p>
 
-      <form method="POST" action="{{ url_for('flashcards.generate') }}" id="deckGenForm">
-        <div class="mb-3">
-          <label class="form-label small fw-semibold">Class / Academic Level</label>
-          <select name="class_level" id="fcClassSelect" class="form-select">
-            <option value="Class 6">Class 6 (Grade 6)</option>
-            <option value="Class 7">Class 7 (Grade 7)</option>
-            <option value="Class 8">Class 8 (Grade 8)</option>
-            <option value="Class 9">Class 9 (SSC)</option>
-            <option value="Class 10" selected>Class 10 (SSC)</option>
-            <option value="Class 11">Class 11 (HSC 1st Year)</option>
-            <option value="Class 12">Class 12 (HSC 2nd Year)</option>
-            <option value="University / General">University / General</option>
-          </select>
+      <!-- Dual Tabs for Admin -->
+      <ul class="nav nav-pills nav-fill mb-3 p-1 bg-light rounded" id="fcAdminTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active small py-1" id="ai-fc-tab" data-bs-toggle="pill" data-bs-target="#aiFcPane" type="button" role="tab">
+            <i class="bi bi-magic me-1"></i>AI Generator
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link small py-1" id="manual-fc-tab" data-bs-toggle="pill" data-bs-target="#manualFcPane" type="button" role="tab">
+            <i class="bi bi-pencil-square me-1"></i>Manual Deck
+          </button>
+        </li>
+      </ul>
+
+      <div class="tab-content" id="fcAdminTabContent">
+        <!-- Tab 1: AI Generator -->
+        <div class="tab-pane fade show active" id="aiFcPane" role="tabpanel">
+          <form method="POST" action="{{ url_for('flashcards.generate') }}" id="deckGenForm">
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Class / Academic Level</label>
+              <select name="class_level" id="fcClassSelect" class="form-select form-select-sm">
+                <option value="Class 5">Class 5 (Primary)</option>
+                <option value="Class 6">Class 6 (Grade 6)</option>
+                <option value="Class 7">Class 7 (Grade 7)</option>
+                <option value="Class 8">Class 8 (Grade 8)</option>
+                <option value="Class 9">Class 9 (SSC)</option>
+                <option value="Class 10" selected>Class 10 (SSC)</option>
+                <option value="Class 11">Class 11 (HSC 1st Year)</option>
+                <option value="Class 12">Class 12 (HSC 2nd Year)</option>
+                <option value="University / General">University / General</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Subject</label>
+              <select name="curriculum_subject" id="fcSubjectSelect" class="form-select form-select-sm">
+                <!-- Populated dynamically via JS -->
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Topic / Chapter</label>
+              <input type="text" name="topic" id="fcTopicInput" class="form-control form-control-sm" placeholder="e.g. Newton's Laws or Periodic Table" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Card Count</label>
+              <select name="count" class="form-select form-select-sm">
+                <option value="4">4 Flashcards</option>
+                <option value="6" selected>6 Flashcards (Standard)</option>
+                <option value="10">10 Flashcards (Deep Dive)</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 fw-semibold" id="fcGenBtn">
+              <i class="bi bi-magic me-2"></i>Generate AI Flashcards
+            </button>
+          </form>
         </div>
 
-        <div class="mb-3">
-          <label class="form-label small fw-semibold">Subject</label>
-          <select name="curriculum_subject" id="fcSubjectSelect" class="form-select">
-            <!-- Populated dynamically via JS -->
-          </select>
-        </div>
+        <!-- Tab 2: Manual Deck Creator -->
+        <div class="tab-pane fade" id="manualFcPane" role="tabpanel">
+          <form method="POST" action="{{ url_for('flashcards.create_manual') }}" id="manualFcForm">
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Deck Title</label>
+              <input type="text" name="title" class="form-control form-control-sm" placeholder="e.g. Essential Formulae" required>
+            </div>
+            <div class="row g-2 mb-2">
+              <div class="col-6">
+                <label class="form-label small fw-semibold">Class Level</label>
+                <select name="class_level" class="form-select form-select-sm">
+                  <option value="Class 5">Class 5</option>
+                  <option value="Class 6">Class 6</option>
+                  <option value="Class 7">Class 7</option>
+                  <option value="Class 8">Class 8</option>
+                  <option value="Class 9">Class 9</option>
+                  <option value="Class 10" selected>Class 10</option>
+                  <option value="Class 11">Class 11</option>
+                  <option value="Class 12">Class 12</option>
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-semibold">Subject</label>
+                <input type="text" name="subject_name" class="form-control form-control-sm" placeholder="e.g. Physics" required>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Topic</label>
+              <input type="text" name="topic" class="form-control form-control-sm" placeholder="e.g. Work, Energy & Power">
+            </div>
 
-        <div class="mb-3">
-          <label class="form-label small fw-semibold">Topic / Chapter</label>
-          <input type="text" name="topic" id="fcTopicInput" class="form-control" placeholder="e.g. Newton's Laws, Periodic Table, or DNA" required>
-        </div>
+            <div id="manualCardsContainer" class="d-flex flex-column gap-2 mb-3">
+              <div class="p-2 border rounded bg-light manual-card-item" data-idx="1">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="fw-bold small text-primary" style="font-size: 0.75rem;">Card #1</span>
+                </div>
+                <input type="text" name="front_1" class="form-control form-control-sm mb-1" placeholder="Front: Prompt or Question..." required>
+                <input type="text" name="back_1" class="form-control form-control-sm mb-1" placeholder="Back: Core Definition or Answer..." required>
+                <input type="text" name="hint_1" class="form-control form-control-sm" placeholder="Hint (optional)...">
+              </div>
+            </div>
 
-        <div class="mb-4">
-          <label class="form-label small fw-semibold">Card Count</label>
-          <select name="count" class="form-select">
-            <option value="4">4 Flashcards</option>
-            <option value="6" selected>6 Flashcards (Standard)</option>
-            <option value="10">10 Flashcards (Deep Dive)</option>
-          </select>
-        </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm w-100 mb-3" onclick="addManualCard()">
+              <i class="bi bi-plus-circle me-1"></i>Add Another Card
+            </button>
 
-        <button type="submit" class="btn btn-primary w-100 fw-semibold" id="fcGenBtn">
-          <i class="bi bi-magic me-2"></i>Generate Flashcards
-        </button>
-      </form>
+            <button type="submit" class="btn btn-success w-100 fw-semibold">
+              <i class="bi bi-check-circle me-1"></i>Publish Flashcard Deck
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
+  {% endif %}
 
   <!-- Decks List Grid -->
-  <div class="col-lg-8">
+  <div class="{% if user.role == 'admin' %}col-lg-7{% else %}col-12{% endif %}">
     <div class="card border-0 shadow-sm p-4 h-100">
       <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <h5 class="fw-bold mb-0"><i class="bi bi-collection-play me-2 text-primary"></i>My Flashcard Decks</h5>
-        <span class="badge bg-primary rounded-pill px-3 py-2">{{ decks|length }} Decks</span>
+        <h5 class="fw-bold mb-0"><i class="bi bi-collection-play me-2 text-primary"></i>Study Flashcard Decks</h5>
+        <span class="badge bg-primary rounded-pill px-3 py-2">{{ decks|length }} Decks Available</span>
       </div>
 
       {% if decks %}
       <div class="row g-3">
         {% for deck in decks %}
-        <div class="col-md-6">
+        <div class="{% if user.role == 'admin' %}col-md-6{% else %}col-md-4{% endif %}">
           <div class="card p-3 border-0 shadow-sm bg-light h-100 d-flex flex-column justify-content-between">
             <div>
               <div class="d-flex justify-content-between align-items-start mb-2">
                 <span class="badge bg-primary-subtle text-primary" style="font-size: 0.68rem;">
                   {{ deck.class_level or 'General' }}
                 </span>
+                {% if user.role == 'admin' %}
                 <form method="POST" action="{{ url_for('flashcards.delete_deck', deck_id=deck.id) }}" onsubmit="return confirm('Delete this deck?');">
                   <button type="submit" class="btn btn-outline-danger btn-sm p-0 border-0" title="Delete Deck">
                     <i class="bi bi-trash"></i>
                   </button>
                 </form>
+                {% endif %}
               </div>
               <h6 class="fw-bold text-dark mb-1">{{ deck.title }}</h6>
               <div class="small text-muted mb-3"><i class="bi bi-tag me-1"></i>{{ deck.topic }}</div>
@@ -147,7 +226,7 @@
       <div class="text-center py-5 text-muted">
         <i class="bi bi-stack fs-1 d-block mb-2"></i>
         <h6>No Flashcard Decks Yet</h6>
-        <p class="small">Use the AI Generator on the left to create your first active recall deck.</p>
+        <p class="small">Decks created by administrators will appear here for your study sessions.</p>
       </div>
       {% endif %}
     </div>
@@ -186,6 +265,29 @@
 
   classSelect.addEventListener('change', updateSubjects);
   updateSubjects();
+
+  let manualCardCount = 1;
+  function addManualCard() {
+    manualCardCount++;
+    const container = document.getElementById('manualCardsContainer');
+    if (!container) return;
+
+    const div = document.createElement('div');
+    div.className = 'p-2 border rounded bg-light manual-card-item';
+    div.setAttribute('data-idx', manualCardCount);
+    div.innerHTML = `
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span class="fw-bold small text-primary" style="font-size: 0.75rem;">Card #${manualCardCount}</span>
+        <button type="button" class="btn btn-outline-danger btn-sm py-0 px-1" onclick="this.closest('.manual-card-item').remove()">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+      <input type="text" name="front_${manualCardCount}" class="form-control form-control-sm mb-1" placeholder="Front: Prompt or Question..." required>
+      <input type="text" name="back_${manualCardCount}" class="form-control form-control-sm mb-1" placeholder="Back: Core Definition or Answer..." required>
+      <input type="text" name="hint_${manualCardCount}" class="form-control form-control-sm" placeholder="Hint (optional)...">
+    `;
+    container.appendChild(div);
+  }
 
   const form = document.getElementById('deckGenForm');
   const btn = document.getElementById('fcGenBtn');

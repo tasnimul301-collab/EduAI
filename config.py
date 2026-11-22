@@ -19,10 +19,13 @@ class Config:
     # Secret key used by Flask to sign session cookies securely
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-edusmart-ai-2026")
 
-    # SQLite Database URI: By default, stores edusmart.db inside an 'instance' folder
-    SQLALCHEMY_DATABASE_URI = os.getenv(
+    # Database URI: Support PostgreSQL (auto-fixing postgres:// to postgresql:// for Render) and SQLite default
+    _raw_db_url = os.getenv(
         "DATABASE_URL", f"sqlite:///{BASE_DIR / 'instance' / 'edusmart.db'}"
     )
+    if _raw_db_url and _raw_db_url.startswith("postgres://"):
+        _raw_db_url = _raw_db_url.replace("postgres://", "postgresql://", 1)
+    SQLALCHEMY_DATABASE_URI = _raw_db_url
 
     # Disable modification tracking overhead to improve performance
     SQLALCHEMY_TRACK_MODIFICATIONS = False

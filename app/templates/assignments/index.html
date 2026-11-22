@@ -6,12 +6,18 @@
 {% block content %}
 <div class="row g-3 mb-4 align-items-center">
   <div class="col-md-6">
+    {% if user.role != 'admin' %}
     <div class="btn-group btn-group-sm">
       <a href="{{ url_for('assignments.index', status='all') }}" class="btn btn-{{ 'primary' if current_filter == 'all' else 'outline-secondary' }}">All Assignments</a>
       <a href="{{ url_for('assignments.index', status='pending') }}" class="btn btn-{{ 'primary' if current_filter == 'pending' else 'outline-secondary' }}">Pending</a>
       <a href="{{ url_for('assignments.index', status='submitted') }}" class="btn btn-{{ 'primary' if current_filter == 'submitted' else 'outline-secondary' }}">Submitted</a>
       <a href="{{ url_for('assignments.index', status='overdue') }}" class="btn btn-{{ 'danger' if current_filter == 'overdue' else 'outline-danger' }}">Overdue</a>
     </div>
+    {% else %}
+    <div class="small text-muted fw-semibold">
+      <i class="bi bi-person-gear text-primary me-1"></i>Administrator Overview: Managing Coursework & Homework
+    </div>
+    {% endif %}
   </div>
   <div class="col-md-6 text-md-end">
     {% if user.role == 'admin' %}
@@ -27,19 +33,21 @@
 <div class="row g-4">
   {% for assign in assignments %}
   <div class="col-md-6 col-lg-4">
-    <div class="card h-100 p-4 border-0 shadow-sm border-start border-4 border-{{ 'success' if assign.status == 'submitted' else ('danger' if assign.is_overdue() or assign.priority == 'high' else 'warning') }}">
+    <div class="card h-100 p-4 border-0 shadow-sm border-start border-4 border-{{ 'success' if (assign.status == 'submitted' and user.role != 'admin') else ('danger' if (assign.is_overdue() or assign.priority == 'high') else 'primary') }}">
       <div class="d-flex justify-content-between align-items-start mb-2">
         <span class="badge bg-{{ 'danger-subtle text-danger' if assign.priority == 'high' else 'warning-subtle text-warning' }} text-uppercase" style="font-size: 0.7rem;">
           {{ assign.priority }} Priority
         </span>
 
         <div class="d-flex align-items-center gap-1">
-          <!-- Toggle submission status -->
+          {% if user.role != 'admin' %}
+          <!-- Toggle submission status (Student only) -->
           <form method="POST" action="{{ url_for('assignments.toggle_status', assignment_id=assign.id) }}">
             <button type="submit" class="btn btn-sm btn-{{ 'success' if assign.status == 'submitted' else 'outline-secondary' }} p-1 px-2" title="Toggle submission">
               <i class="bi bi-{{ 'check2-circle' if assign.status == 'submitted' else 'circle' }}"></i>
             </button>
           </form>
+          {% endif %}
 
           {% if user.role == 'admin' %}
           <!-- Delete assignment (Admin only) -->
@@ -54,7 +62,7 @@
         </div>
       </div>
 
-      <h5 class="fw-bold mb-1 {% if assign.status == 'submitted' %}text-decoration-line-through text-muted{% endif %}">
+      <h5 class="fw-bold mb-1 {% if assign.status == 'submitted' and user.role != 'admin' %}text-decoration-line-through text-muted{% endif %}">
         {{ assign.title }}
       </h5>
 
@@ -65,12 +73,16 @@
       <div class="border-top pt-3 mt-auto d-flex justify-content-between align-items-center small">
         <span class="text-muted"><i class="bi bi-book me-1"></i>{{ assign.subject.name if assign.subject else 'General' }}</span>
         
-        {% if assign.status == 'submitted' %}
-        <span class="badge bg-success-subtle text-success">Submitted</span>
-        {% elif assign.is_overdue() %}
-        <span class="badge bg-danger text-white">Overdue</span>
+        {% if user.role != 'admin' %}
+          {% if assign.status == 'submitted' %}
+          <span class="badge bg-success-subtle text-success">Submitted</span>
+          {% elif assign.is_overdue() %}
+          <span class="badge bg-danger text-white">Overdue</span>
+          {% else %}
+          <span class="badge bg-warning text-dark">{{ assign.days_remaining() }} days left</span>
+          {% endif %}
         {% else %}
-        <span class="badge bg-warning text-dark">{{ assign.days_remaining() }} days left</span>
+          <span class="badge bg-light text-secondary border">Class Assignment</span>
         {% endif %}
       </div>
 

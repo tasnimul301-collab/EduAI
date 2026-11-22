@@ -26,6 +26,11 @@ def login_required(f):
         if "user_id" not in session:
             flash("Please log in to access this page.", "warning")
             return redirect(url_for("auth.login", next=request.url))
+        user = get_current_user()
+        if not user:
+            session.clear()
+            flash("Your session has expired. Please log in again.", "info")
+            return redirect(url_for("auth.login"))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -37,7 +42,12 @@ def admin_required(f):
         if "user_id" not in session:
             flash("Please log in with administrator privileges.", "warning")
             return redirect(url_for("auth.login"))
-        if session.get("role") != "admin":
+        user = get_current_user()
+        if not user:
+            session.clear()
+            flash("Your session has expired. Please log in again.", "info")
+            return redirect(url_for("auth.login"))
+        if user.role != "admin":
             flash("Access denied: Administrator privileges required.", "danger")
             abort(403)
         return f(*args, **kwargs)

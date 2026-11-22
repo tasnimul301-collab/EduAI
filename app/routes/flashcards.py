@@ -91,7 +91,7 @@ def index():
     user = get_current_user()
     _ensure_demo_decks_for_user(user.id)
 
-    decks = FlashcardDeck.query.filter_by(user_id=user.id).order_by(FlashcardDeck.created_at.desc()).all()
+    decks = FlashcardDeck.query.order_by(FlashcardDeck.created_at.desc()).all()
     subjects = Subject.query.filter_by(user_id=user.id).all()
 
     total_cards = sum(len(d.cards) for d in decks)
@@ -116,15 +116,18 @@ def index():
 def study_deck(deck_id):
     """Interactive 3D flashcard study session."""
     user = get_current_user()
-    deck = FlashcardDeck.query.filter_by(id=deck_id, user_id=user.id).first_or_404()
+    deck = FlashcardDeck.query.filter_by(id=deck_id).first_or_404()
     return render_template("flashcards/study.html", user=user, deck=deck)
 
 
 @flashcards_bp.route("/generate", methods=["POST"])
 @login_required
 def generate():
-    """Generate new flashcards deck via Gemini AI."""
+    """Generate new flashcards deck via Gemini AI (Admin only)."""
     user = get_current_user()
+    if user.role != "admin":
+        flash("Only administrators have permission to generate flashcards.", "danger")
+        return redirect(url_for("flashcards.index"))
 
     class_level = request.form.get("class_level", "Class 10").strip()
     subject_name = request.form.get("curriculum_subject", "General Science").strip()
@@ -180,14 +183,71 @@ def generate():
     return redirect(url_for("flashcards.study_deck", deck_id=new_deck.id))
 
 
+@flashcards_bp.route("/create-manual", methods=["POST"])
+@login_required
+def create_manual():
+    """Manually create a new flashcard deck (Admin only)."""
+    user = get_current_user()
+    if user.role != "admin":
+        flash("Only administrators have permission to create flashcard decks.", "danger")
+        return redirect(url_for("flashcards.index"))
+
+    title = request.form.get("title", "").strip()
+    class_level = request.form.get("class_level", "Class 10").strip()
+    subject_name = request.form.get("subject_name", "General Science").strip()
+    topic = request.form.get("topic", "").strip() or title
+
+    if not title:
+        flash("Deck title is required.", "warning")
+        return redirect(url_for("flashcards.index"))
+
+    cards_data = []
+    idx = 1
+    while True:
+        front = request.form.get(f"front_{idx}", "").strip()
+        if not front:
+            break
+        back = request.form.get(f"back_{idx}", "").strip()
+        hint = request.form.get(f"hint_{idx}", "").strip()
+        if front and back:
+            cards_data.append({"front": front, "back": back, "hint": hint})
+        idx += 1
+
+    if not cards_data:
+        flash("Please provide at least 1 flashcard with front and back text.", "danger")
+        return redirect(url_for("flashcards.index"))
+
+    deck_title = f"[{class_level}] {subject_name}: {title}"
+    new_deck = FlashcardDeck(
+        user_id=user.id,
+        title=deck_title,
+        class_level=class_level,
+        topic=topic,
+    )
+    db.session.add(new_deck)
+    db.session.flush()
+
+    for cd in cards_data:
+        c = Flashcard(
+            deck_id=new_deck.id,
+            front_question=cd["front"],
+            back_answer=cd["back"],
+            hint=cd["hint"],
+        )
+        db.session.add(c)
+
+    db.session.commit()
+    log_activity(f"Manually created flashcard deck '{deck_title}'", "Flashcards", user.id)
+    flash(f"Flashcard deck '{deck_title}' created successfully with {len(cards_data)} cards!", "success")
+    return redirect(url_for("flashcards.study_deck", deck_id=new_deck.id))
+
+
 @flashcards_bp.route("/card/<int:card_id>/toggle", methods=["POST"])
 @login_required
 def toggle_card(card_id):
     """Toggle flashcard mastery status via AJAX."""
     user = get_current_user()
-    card = Flashcard.query.join(FlashcardDeck).filter(
-        Flashcard.id == card_id, FlashcardDeck.user_id == user.id
-    ).first_or_404()
+    card = Flashcard.query.filter_by(id=card_id).first_or_404()
 
     card.is_mastered = not card.is_mastered
     if card.is_mastered:
@@ -209,9 +269,13 @@ def toggle_card(card_id):
 @flashcards_bp.route("/deck/<int:deck_id>/delete", methods=["POST"])
 @login_required
 def delete_deck(deck_id):
-    """Delete a flashcard deck."""
+    """Delete a flashcard deck (Admin only)."""
     user = get_current_user()
-    deck = FlashcardDeck.query.filter_by(id=deck_id, user_id=user.id).first_or_404()
+    if user.role != "admin":
+        flash("Only administrators have permission to delete flashcard decks.", "danger")
+        return redirect(url_for("flashcards.index"))
+
+    deck = FlashcardDeck.query.filter_by(id=deck_id).first_or_404()
     name = deck.title
     db.session.delete(deck)
     db.session.commit()

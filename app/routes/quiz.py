@@ -127,6 +127,103 @@ def generate():
     return redirect(url_for("quiz.take", quiz_id=new_quiz.id))
 
 
+@quiz_bp.route("/create-manual", methods=["POST"])
+@login_required
+def create_manual():
+    """Manually create a new quiz with custom questions (Admin only)."""
+    user = get_current_user()
+    if user.role != "admin":
+        flash("Only administrators have permission to create quizzes.", "danger")
+        return redirect(url_for("quiz.index"))
+
+    title = request.form.get("title", "").strip()
+    class_level = request.form.get("class_level", "Class 10").strip()
+    subject_name = request.form.get("subject_name", "General Science").strip()
+    topic = request.form.get("topic", "").strip() or title
+    difficulty = request.form.get("difficulty", "medium").strip()
+
+    if not title:
+        flash("Quiz title is required.", "warning")
+        return redirect(url_for("quiz.index"))
+
+    # Extract questions dynamically from form
+    questions_data = []
+    idx = 1
+    while True:
+        q_text = request.form.get(f"q_text_{idx}", "").strip()
+        if not q_text:
+            break
+        opt_a = request.form.get(f"opt_a_{idx}", "").strip()
+        opt_b = request.form.get(f"opt_b_{idx}", "").strip()
+        opt_c = request.form.get(f"opt_c_{idx}", "").strip()
+        opt_d = request.form.get(f"opt_d_{idx}", "").strip()
+        correct = request.form.get(f"correct_{idx}", "A").strip().upper()
+        explanation = request.form.get(f"explanation_{idx}", "").strip()
+
+        if opt_a and opt_b and opt_c and opt_d:
+            questions_data.append({
+                "question": q_text,
+                "opt_a": opt_a,
+                "opt_b": opt_b,
+                "opt_c": opt_c,
+                "opt_d": opt_d,
+                "correct": correct if correct in ["A", "B", "C", "D"] else "A",
+                "explanation": explanation,
+            })
+        idx += 1
+
+    if not questions_data:
+        flash("Please provide at least 1 complete question with 4 options.", "danger")
+        return redirect(url_for("quiz.index"))
+
+    quiz_title = f"[{class_level}] {subject_name}: {title}"
+    new_quiz = Quiz(
+        user_id=user.id,
+        title=quiz_title,
+        topic=topic,
+        class_level=class_level,
+        difficulty=difficulty,
+        total_questions=len(questions_data),
+    )
+    db.session.add(new_quiz)
+    db.session.flush()
+
+    for qd in questions_data:
+        q = QuizQuestion(
+            quiz_id=new_quiz.id,
+            question_text=qd["question"],
+            option_a=qd["opt_a"],
+            option_b=qd["opt_b"],
+            option_c=qd["opt_c"],
+            option_d=qd["opt_d"],
+            correct_option=qd["correct"],
+            explanation=qd["explanation"],
+        )
+        db.session.add(q)
+
+    db.session.commit()
+    log_activity(f"Manually created quiz '{new_quiz.title}'", "Quiz", user.id)
+    flash(f"Quiz '{new_quiz.title}' with {len(questions_data)} questions created successfully!", "success")
+    return redirect(url_for("quiz.index"))
+
+
+@quiz_bp.route("/delete/<int:quiz_id>", methods=["POST"])
+@login_required
+def delete_quiz(quiz_id):
+    """Delete a quiz (Admin only)."""
+    user = get_current_user()
+    if user.role != "admin":
+        flash("Only administrators have permission to delete quizzes.", "danger")
+        return redirect(url_for("quiz.index"))
+
+    quiz = Quiz.query.filter_by(id=quiz_id).first_or_404()
+    title = quiz.title
+    db.session.delete(quiz)
+    db.session.commit()
+    flash(f"Quiz '{title}' has been deleted.", "info")
+    return redirect(url_for("quiz.index"))
+
+
 @quiz_bp.route("/take/<int:quiz_id>")
 @login_required
 def take(quiz_id):

@@ -46,7 +46,9 @@ def create_app(config_name: str = "default") -> Flask:
 
         if user_id:
             current_user = db.session.get(User, user_id)
-            if current_user:
+            if not current_user:
+                session.clear()
+            else:
                 unread_notifications_count = Notification.query.filter_by(
                     user_id=user_id, is_read=False
                 ).count()
@@ -91,6 +93,8 @@ def create_app(config_name: str = "default") -> Flask:
     @app.errorhandler(500)
     def internal_error(error):
         db.session.rollback()
+        import traceback
+        app.logger.error(f"500 Internal Error: {error}\n{traceback.format_exc()}")
         return render_template("errors/500.html"), 500
 
     # Auto-initialize database tables and seed data for production and development
@@ -104,6 +108,7 @@ def _auto_init_database(app: Flask):
     """Ensure database tables exist, migrations are applied, and demo data is seeded."""
     with app.app_context():
         try:
+            import app.models  # Register all models with SQLAlchemy
             db.create_all()
 
             # Ensure class_level and gamification columns exist for SQLite
