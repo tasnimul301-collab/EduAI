@@ -158,6 +158,67 @@ def _auto_init_database(app: Flask):
                 from app.utils.curriculum import seed_class_quizzes_for_user, seed_class_subjects_for_user
                 seed_class_quizzes_for_user(student.id)
                 seed_class_subjects_for_user(student.id)
+
+            # Ensure initial sample notes for Lecture, Revision, Formula, General exist
+            from app.models.note import Note
+            if Note.query.count() == 0:
+                admin_user = User.query.filter_by(role="admin").first()
+                author_id = admin_user.id if admin_user else 1
+                sample_notes = [
+                    Note(
+                        user_id=author_id,
+                        title="Newton's Laws of Motion & Momentum",
+                        category="Lecture",
+                        content=(
+                            "1. First Law (Law of Inertia): An object remains at rest or in uniform motion unless acted upon by a net force.\n"
+                            "2. Second Law: F = m * a (Force equals mass times acceleration).\n"
+                            "3. Third Law: Every action has an equal and opposite reaction.\n\n"
+                            "Conservation of Linear Momentum: m1*u1 + m2*u2 = m1*v1 + m2*v2"
+                        ),
+                    ),
+                    Note(
+                        user_id=author_id,
+                        title="Physics & Chemistry Quick Exam Revision",
+                        category="Revision",
+                        content=(
+                            "Key Revision Takeaways for Board Examinations:\n"
+                            "- Ohm's Law: V = I * R\n"
+                            "- Power: P = V * I = I^2 * R = V^2 / R\n"
+                            "- Kinetic Energy: E_k = 0.5 * m * v^2\n"
+                            "- Potential Energy: E_p = m * g * h\n"
+                            "- Ideal Gas Equation: P * V = n * R * T"
+                        ),
+                    ),
+                    Note(
+                        user_id=author_id,
+                        title="Essential Mathematics & Calculus Formulas",
+                        category="Formula",
+                        content=(
+                            "Algebra & Trigonometry:\n"
+                            "- Quadratic Formula: x = (-b ± √(b² - 4ac)) / (2a)\n"
+                            "- sin²(θ) + cos²(θ) = 1\n"
+                            "- tan(θ) = sin(θ) / cos(θ)\n\n"
+                            "Calculus Derivatives:\n"
+                            "- d/dx [x^n] = n * x^(n-1)\n"
+                            "- d/dx [sin(x)] = cos(x)\n"
+                            "- d/dx [e^x] = e^x"
+                        ),
+                    ),
+                    Note(
+                        user_id=author_id,
+                        title="General Guidelines for Board Exam Preparation",
+                        category="General",
+                        content=(
+                            "Study Strategy & Time Management Guidelines:\n"
+                            "1. Maintain a daily study streak of at least 45 minutes.\n"
+                            "2. Practice Creative Questions (CQ) using the 10-mark step breakdown (ক:১, খ:২, গ:৩, ঘ:৪).\n"
+                            "3. Use Spaced Repetition flashcards for definitions and formulas.\n"
+                            "4. Submit coursework assignments ahead of the deadline."
+                        ),
+                    ),
+                ]
+                db.session.add_all(sample_notes)
+                db.session.commit()
         except Exception as e:
             app.logger.warning(f"Database auto-initialization notice: {e}")
 

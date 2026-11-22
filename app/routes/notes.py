@@ -39,7 +39,8 @@ def index():
     category_filter = request.args.get("category", "all")
     subject_filter = request.args.get("subject_id", "all")
 
-    query = Note.query.filter_by(user_id=user.id)
+    # All students and administrators can view all notes created by administrators/instructors
+    query = Note.query
 
     if search_query:
         query = query.filter(
@@ -54,7 +55,7 @@ def index():
         query = query.filter_by(subject_id=int(subject_filter))
 
     notes = query.order_by(Note.updated_at.desc()).all()
-    subjects = Subject.query.filter_by(user_id=user.id).all()
+    subjects = Subject.query.order_by(Subject.name.asc()).all()
 
     return render_template(
         "notes/index.html",
@@ -70,8 +71,11 @@ def index():
 @notes_bp.route("/create", methods=["GET", "POST"])
 @login_required
 def create():
-    """Create a new digital study note with optional PDF attachment."""
+    """Create a new digital study note with optional PDF attachment (Admin only)."""
     user = get_current_user()
+    if user.role != "admin":
+        flash("Only administrators have permission to create and upload study notes.", "danger")
+        return redirect(url_for("notes.index"))
 
     if request.method == "POST":
         title = request.form.get("title", "").strip()
@@ -82,7 +86,7 @@ def create():
 
         if not title or not content:
             flash("Note title and content are required.", "danger")
-            subjects = Subject.query.filter_by(user_id=user.id).all()
+            subjects = Subject.query.order_by(Subject.name.asc()).all()
             return render_template("notes/create.html", subjects=subjects, title=title, content=content)
 
         new_note = Note(
@@ -123,25 +127,29 @@ def create():
         flash("Note created successfully!", "success")
         return redirect(url_for("notes.view", note_id=new_note.id))
 
-    subjects = Subject.query.filter_by(user_id=user.id).all()
+    subjects = Subject.query.order_by(Subject.name.asc()).all()
     return render_template("notes/create.html", subjects=subjects)
 
 
 @notes_bp.route("/<int:note_id>")
 @login_required
 def view(note_id):
-    """View a single note and its attachments."""
+    """View a single note and its attachments (Students and Admins)."""
     user = get_current_user()
-    note = Note.query.filter_by(id=note_id, user_id=user.id).first_or_404()
+    note = Note.query.filter_by(id=note_id).first_or_404()
     return render_template("notes/view.html", user=user, note=note)
 
 
 @notes_bp.route("/<int:note_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit(note_id):
-    """Edit an existing note."""
+    """Edit an existing note (Admin only)."""
     user = get_current_user()
-    note = Note.query.filter_by(id=note_id, user_id=user.id).first_or_404()
+    if user.role != "admin":
+        flash("Only administrators have permission to edit study notes.", "danger")
+        return redirect(url_for("notes.view", note_id=note_id))
+
+    note = Note.query.filter_by(id=note_id).first_or_404()
 
     if request.method == "POST":
         title = request.form.get("title", "").strip()
@@ -161,16 +169,20 @@ def edit(note_id):
             flash("Note updated successfully.", "success")
             return redirect(url_for("notes.view", note_id=note.id))
 
-    subjects = Subject.query.filter_by(user_id=user.id).all()
+    subjects = Subject.query.order_by(Subject.name.asc()).all()
     return render_template("notes/edit.html", user=user, note=note, subjects=subjects)
 
 
 @notes_bp.route("/<int:note_id>/delete", methods=["POST"])
 @login_required
 def delete(note_id):
-    """Delete a note and any attached files."""
+    """Delete a note and any attached files (Admin only)."""
     user = get_current_user()
-    note = Note.query.filter_by(id=note_id, user_id=user.id).first_or_404()
+    if user.role != "admin":
+        flash("Only administrators have permission to delete study notes.", "danger")
+        return redirect(url_for("notes.index"))
+
+    note = Note.query.filter_by(id=note_id).first_or_404()
     title = note.title
 
     # Remove attached files from disk
@@ -192,9 +204,9 @@ def delete(note_id):
 @notes_bp.route("/download/<int:file_id>")
 @login_required
 def download_file(file_id):
-    """Download or view an uploaded PDF securely."""
+    """Download or view an uploaded PDF securely (Students and Admins)."""
     user = get_current_user()
-    file_record = UploadedFile.query.filter_by(id=file_id, user_id=user.id).first_or_404()
+    file_record = UploadedFile.query.filter_by(id=file_id).first_or_404()
     return send_from_directory(
         current_app.config["UPLOAD_FOLDER"],
         file_record.file_path,
@@ -210,7 +222,7 @@ def summarize(note_id):
     from flask import jsonify
     from app.services.ai_service import AIService
     user = get_current_user()
-    note = Note.query.filter_by(id=note_id, user_id=user.id).first_or_404()
+    note = Note.query.filter_by(id=note_id).first_or_404()
 
     result = AIService.summarize_note(note.title, note.content)
     if result.get("success"):

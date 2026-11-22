@@ -383,6 +383,58 @@ class TestNewFeatures(unittest.TestCase):
         self.assertEqual(sub2.original_filename, "Report_Alex_v2.docx")
         self.assertTrue(sub2.is_word_doc())
 
+    def test_notes_admin_only_creation_and_student_read_only(self):
+        """Test that only admin can create/upload notes and students can only view them."""
+        # 1. Student attempting to access /notes/create should be blocked
+        res_stud_create = self.client.get("/notes/create", follow_redirects=True)
+        self.assertEqual(res_stud_create.status_code, 200)
+        self.assertIn(b"Only administrators have permission to create and upload study notes", res_stud_create.data)
+
+        # 2. Student attempting to POST /notes/create should be blocked
+        res_stud_post = self.client.post(
+            "/notes/create",
+            data={"title": "Hacked Note", "content": "illegal content", "category": "Lecture"},
+            follow_redirects=True,
+        )
+        self.assertIn(b"Only administrators have permission to create and upload study notes", res_stud_post.data)
+
+        # 3. Admin creates Lecture, Revision, Formula, and General notes
+        admin = User(username="adminnote", email="adminnote@test.com", role="admin")
+        admin.set_password("adminpass")
+        db.session.add(admin)
+        db.session.commit()
+
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = admin.id
+            sess["role"] = "admin"
+
+        for cat in ["Lecture", "Revision", "Formula", "General"]:
+            res_admin_create = self.client.post(
+                "/notes/create",
+                data={
+                    "title": f"Admin {cat} Notes",
+                    "content": f"Detailed content for {cat}.",
+                    "category": cat,
+                },
+                follow_redirects=True,
+            )
+            self.assertEqual(res_admin_create.status_code, 200)
+
+        # 4. Student switches back and views /notes/
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = self.user.id
+            sess["role"] = "student"
+
+        res_stud_view = self.client.get("/notes/")
+        self.assertEqual(res_stud_view.status_code, 200)
+        # Verify student sees all categories created by admin
+        self.assertIn(b"Admin Lecture Notes", res_stud_view.data)
+        self.assertIn(b"Admin Revision Notes", res_stud_view.data)
+        self.assertIn(b"Admin Formula Notes", res_stud_view.data)
+        self.assertIn(b"Admin General Notes", res_stud_view.data)
+        # Verify "Upload / Create Note" button is NOT visible to student
+        self.assertNotIn(b"Upload / Create Note", res_stud_view.data)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -16,9 +16,11 @@
     </form>
   </div>
   <div class="col-md-6 text-md-end">
+    {% if user.role == 'admin' %}
     <a href="{{ url_for('notes.create') }}" class="btn btn-primary">
-      <i class="bi bi-journal-plus me-2"></i>Create New Note
+      <i class="bi bi-journal-plus me-2"></i>Upload / Create Note
     </a>
+    {% endif %}
   </div>
 </div>
 
@@ -80,8 +82,16 @@
   <div class="text-muted">
     <i class="bi bi-journal-x fs-1 d-block mb-2"></i>
     <h6>No Notes Found</h6>
-    <p class="small mb-3">Keep digital summaries, lecture formulas, and PDF attachments organized.</p>
+    <p class="small mb-3">
+      {% if user.role == 'admin' %}
+      Upload study materials, lecture summaries, revision formulas, and PDF documents for students.
+      {% else %}
+      No study materials have been uploaded for this category yet. Check back soon for new lecture notes and formulas!
+      {% endif %}
+    </p>
+    {% if user.role == 'admin' %}
     <a href="{{ url_for('notes.create') }}" class="btn btn-primary btn-sm">Create New Note</a>
+    {% endif %}
   </div>
 </div>
 {% endif %}

@@ -378,18 +378,18 @@ class EduSmartE2ETestCase(unittest.TestCase):
     # 5. Digital Notes & PDF Attachments
     # =========================================================================
     def test_e2e_notes_crud_search_and_pdf_attachment(self):
-        """Test note creation, searching, editing, PDF upload, and download."""
+        """Test admin note creation, searching, editing, PDF upload, and student download."""
         self.client.post(
             "/auth/login",
-            data={"identifier": "student_e2e", "password": "StudentPass123!"},
+            data={"identifier": "admin_e2e", "password": "AdminPass123!"},
             follow_redirects=True,
         )
 
-        subj = Subject(user_id=self.student.id, name="Software Engineering", code="CSE-306")
+        subj = Subject(user_id=self.admin.id, name="Software Engineering", code="CSE-306")
         db.session.add(subj)
         db.session.commit()
 
-        # 1. Create note with PDF file
+        # 1. Admin creates note with PDF file
         pdf_content = b"%PDF-1.4 Mock PDF file for testing attachments."
         data = {
             "title": "Design Patterns: Observer & Singleton",
@@ -414,20 +414,34 @@ class EduSmartE2ETestCase(unittest.TestCase):
         uploaded_file = note.files[0]
         self.assertEqual(uploaded_file.filename, "design_patterns.pdf")
 
-        # 2. Test downloading the PDF attachment
+        # 2. Student logs in to search and download the PDF attachment
+        self.client.get("/auth/logout")
+        self.client.post(
+            "/auth/login",
+            data={"identifier": "student_e2e", "password": "StudentPass123!"},
+            follow_redirects=True,
+        )
+
         download_res = self.client.get(f"/notes/download/{uploaded_file.id}")
         self.assertEqual(download_res.status_code, 200)
         self.assertEqual(download_res.data, pdf_content)
         download_res.close()
 
-        # 3. Search notes
+        # 3. Search notes as student
         search_res = self.client.get("/notes/?q=Observer")
         self.assertIn(b"Design Patterns: Observer", search_res.data)
 
         search_miss = self.client.get("/notes/?q=NonExistentKeywordXYZ")
         self.assertNotIn(b"Design Patterns: Observer", search_miss.data)
 
-        # 4. Edit note
+        # 4. Admin logs back in to edit and delete note
+        self.client.get("/auth/logout")
+        self.client.post(
+            "/auth/login",
+            data={"identifier": "admin_e2e", "password": "AdminPass123!"},
+            follow_redirects=True,
+        )
+
         edit_res = self.client.post(
             f"/notes/{note.id}/edit",
             data={
