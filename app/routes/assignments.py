@@ -25,6 +25,10 @@ def index():
         action = request.form.get("action", "create")
 
         if action == "create":
+            if user.role != "admin":
+                flash("Only administrators have permission to add new coursework assignments.", "danger")
+                return redirect(url_for("assignments.index"))
+
             title = request.form.get("title", "").strip()
             description = request.form.get("description", "").strip()
             subject_id = request.form.get("subject_id")
@@ -53,22 +57,38 @@ def index():
                 )
                 db.session.add(new_assignment)
 
-                # Add automatic deadline notification reminder
-                reminder = Notification(
+                # Add automatic deadline notification reminder for all students
+                from app.models.user import User
+                all_students = User.query.filter_by(role="student").all()
+                for st in all_students:
+                    reminder = Notification(
+                        user_id=st.id,
+                        title=f"New Assignment: {title}",
+                        message=f"Due on {due_date.strftime('%b %d, %Y at %I:%M %p')}. Stay on schedule!",
+                        type="deadline",
+                    )
+                    db.session.add(reminder)
+
+                # Also add for admin
+                reminder_admin = Notification(
                     user_id=user.id,
                     title=f"New Assignment: {title}",
-                    message=f"Due on {due_date.strftime('%b %d, %Y at %I:%M %p')}. Stay on schedule!",
+                    message=f"Due on {due_date.strftime('%b %d, %Y at %I:%M %p')}.",
                     type="deadline",
                 )
-                db.session.add(reminder)
+                db.session.add(reminder_admin)
 
                 db.session.commit()
                 log_activity(f"Created assignment '{title}'", "Assignments", user.id)
                 flash("Assignment added successfully!", "success")
 
         elif action == "delete":
+            if user.role != "admin":
+                flash("Only administrators have permission to delete assignments.", "danger")
+                return redirect(url_for("assignments.index"))
+
             assignment_id = request.form.get("assignment_id")
-            assignment = Assignment.query.filter_by(id=assignment_id, user_id=user.id).first()
+            assignment = Assignment.query.filter_by(id=assignment_id).first()
             if assignment:
                 title = assignment.title
                 db.session.delete(assignment)
@@ -79,7 +99,12 @@ def index():
         return redirect(url_for("assignments.index"))
 
     filter_status = request.args.get("status", "all")
-    query = Assignment.query.filter_by(user_id=user.id)
+    if user.role == "admin":
+        query = Assignment.query
+    else:
+        from app.models.user import User
+        admin_ids = [u.id for u in User.query.filter_by(role="admin").all()]
+        query = Assignment.query.filter((Assignment.user_id == user.id) | (Assignment.user_id.in_(admin_ids)))
 
     if filter_status == "pending":
         query = query.filter_by(status="pending")
@@ -89,7 +114,7 @@ def index():
         query = query.filter(Assignment.status == "pending", Assignment.due_date < datetime.utcnow())
 
     assignments = query.order_by(Assignment.due_date.asc()).all()
-    subjects = Subject.query.filter_by(user_id=user.id).all()
+    subjects = Subject.query.filter_by(user_id=user.id).all() if user.role != "admin" else Subject.query.all()
 
     return render_template(
         "assignments/index.html",
@@ -105,7 +130,7 @@ def index():
 def toggle_status(assignment_id):
     """Toggle an assignment status between pending and submitted."""
     user = get_current_user()
-    assignment = Assignment.query.filter_by(id=assignment_id, user_id=user.id).first_or_404()
+    assignment = Assignment.query.filter_by(id=assignment_id).first_or_404()
 
     if assignment.status == "submitted":
         assignment.status = "pending"

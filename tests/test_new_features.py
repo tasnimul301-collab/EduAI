@@ -207,6 +207,39 @@ class TestNewFeatures(unittest.TestCase):
         self.assertIn(b"General Science Diagnostic", res.data)
         self.assertIn(b"90.0%", res.data)
 
+    def test_student_cannot_add_cq_or_assignment_or_quiz(self):
+        """Verify that students cannot generate CQ, add assignments, or generate quizzes."""
+        # 1. Student attempting to generate CQ
+        cq_res = self.client.post(
+            "/cq/generate",
+            data={"class_level": "Class 10", "curriculum_subject": "Physics", "topic": "Motion"},
+            follow_redirects=True,
+        )
+        self.assertIn(b"Only administrators have permission to generate or add new Creative Questions", cq_res.data)
+
+        # 2. Student attempting to add assignment
+        assign_res = self.client.post(
+            "/assignments/",
+            data={"action": "create", "title": "Illegal Homework", "due_date": "2027-01-01"},
+            follow_redirects=True,
+        )
+        self.assertIn(b"Only administrators have permission to add new coursework assignments", assign_res.data)
+
+        # 3. Student attempting to generate quiz
+        quiz_res = self.client.post(
+            "/quiz/generate",
+            data={"topic": "Unauthorized Quiz", "difficulty": "easy", "count": "5"},
+            follow_redirects=True,
+        )
+        self.assertIn(b"Only administrators have permission to generate or add new quizzes", quiz_res.data)
+
+    def test_class_5_quizzes_present(self):
+        """Test that Class 5 quizzes are seeded and displayed in quiz catalog."""
+        res = self.client.get("/quiz/")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(b"Class 5", res.data)
+        self.assertIn(b"Primary Science", res.data)
+
 
 if __name__ == "__main__":
     unittest.main()

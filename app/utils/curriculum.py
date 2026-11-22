@@ -12,6 +12,24 @@ from app.models.quiz import Quiz, QuizQuestion
 
 
 CLASS_CURRICULUM = {
+    "Class 5": {
+        "subjects": [
+            "Primary Science",
+            "Mathematics",
+            "English",
+            "Bangla",
+            "Bangladesh & Global Studies",
+            "Islam & Moral Education",
+        ],
+        "topics": {
+            "Primary Science": ["Our Environment & Ecosystem", "Healthy Living & Nutrients", "States of Water & Water Cycle", "Matter & Energy Basics"],
+            "Mathematics": ["Four Basic Operations & Word Problems", "Fractions & Decimals", "LCM & GCD (লসাগু ও গসাগু)", "Geometry: Angles, Triangles & Rectangles"],
+            "English": ["Parts of Speech & Articles", "Tenses & Simple Sentences", "Opposite Words & Vocabulary", "Everyday Dialogue & Punctuation"],
+            "Bangla": ["বিরামচিহ্ন ও যুক্তবর্ণ", "এককথায় প্রকাশ ও সমার্থক শব্দ", "বিপরীত শব্দ ও শুদ্ধ বানান", "পদ পরিচয় ও লিঙ্গ পরিবর্তন"],
+            "Bangladesh & Global Studies": ["Liberation War & National History", "Rivers, Weather & Climate of Bangladesh", "Democratic Values & Civic Duties", "Preserving Natural Resources"],
+            "Islam & Moral Education": ["Iman & Aqeedah (Faith & Belief)", "Taharah & Daily Prayers (Salat)", "Truthfulness & Respect for Elders", "Moral Duties & Forgiveness"],
+        },
+    },
     "Class 6": {
         "subjects": [
             "General Science",
@@ -161,8 +179,195 @@ CLASS_CURRICULUM = {
 }
 
 
-# Pre-built comprehensive quiz catalog for all classes 6-12
+# Pre-built comprehensive quiz catalog for all classes 5-12
 PREBUILT_QUIZZES = [
+    # ========================== CLASS 5 ==========================
+    {
+        "class_level": "Class 5",
+        "subject": "Primary Science",
+        "title": "[Class 5] Primary Science: Environment & Living Organisms",
+        "topic": "Environment & Living Organisms",
+        "difficulty": "easy",
+        "questions": [
+            {
+                "question": "উদ্ভিদ নিজের খাদ্য তৈরির জন্য বাতাস থেকে কোন গ্যাস গ্রহণ করে?",
+                "options": {"A": "অক্সিজেন", "B": "কার্বন ডাই-অক্সাইড", "C": "নাইট্রোজেন", "D": "হাইড্রোজেন"},
+                "correct": "B",
+                "explanation": "সালোকসংশ্লেষণ প্রক্রিয়ায় সবুজ উদ্ভিদ কার্বন ডাই-অক্সাইড গ্রহণ করে এবং অক্সিজেন ত্যাগ করে।",
+            },
+            {
+                "question": "Which of the following is an example of an abiotic (non-living) component of the environment?",
+                "options": {"A": "Fish", "B": "Tree", "C": "Sunlight", "D": "Earthworm"},
+                "correct": "C",
+                "explanation": "Sunlight, air, water, and soil are non-living (abiotic) components of ecosystems.",
+            },
+            {
+                "question": "কোন ভিটামিনের অভাবে মানবদেহে রাতকানা রোগ হয়?",
+                "options": {"A": "ভিটামিন এ (Vitamin A)", "B": "ভিটামিন বি", "C": "ভিটামিন সি", "D": "ভিটামিন ডি"},
+                "correct": "A",
+                "explanation": "ভিটামিন এ চোখের দৃষ্টিশক্তি ভালো রাখে। এর অভাবে রাতকানা রোগ হয়।",
+            },
+            {
+                "question": "Which process turns liquid water into invisible water vapor when heated by the sun?",
+                "options": {"A": "Condensation", "B": "Evaporation", "C": "Freezing", "D": "Precipitation"},
+                "correct": "B",
+                "explanation": "Evaporation is the change of liquid water into gas/vapor due to thermal energy.",
+            },
+        ],
+    },
+    {
+        "class_level": "Class 5",
+        "subject": "Mathematics",
+        "title": "[Class 5] Mathematics: Fractions, LCM & Geometry",
+        "topic": "Fractions, LCM & Basic Geometry",
+        "difficulty": "easy",
+        "questions": [
+            {
+                "question": "৪ এবং ৬ এর লঘিষ্ঠ সাধারণ গুণিতক (ল.সা.গু. / LCM) কত?",
+                "options": {"A": "১২", "B": "২৪", "C": "২", "D": "১৬"},
+                "correct": "A",
+                "explanation": "৪ এর গুণিতক: ৪, ৮, ১২, ১৬... এবং ৬ এর গুণিতক: ৬, ১২, ১৮... সাধারণ ক্ষুদ্রতম গুণিতক ১২।",
+            },
+            {
+                "question": "যে কোণের পরিমাপ ৯০° (এক সমকোণ) অপেক্ষা ছোট তাকে কী কোণ বলে?",
+                "options": {"A": "স্থূলকোণ", "B": "সূক্ষ্মকোণ", "C": "সরলকোণ", "D": "প্রবৃদ্ধ কোণ"},
+                "correct": "B",
+                "explanation": "০° থেকে বড় এবং ৯০° অপেক্ষা ছোট কোণকে সূক্ষ্মকোণ (Acute Angle) বলে।",
+            },
+            {
+                "question": "What is the result of 3/4 + 1/4?",
+                "options": {"A": "4/8", "B": "1", "C": "3/16", "D": "2"},
+                "correct": "B",
+                "explanation": "3/4 + 1/4 = 4/4 = 1.",
+            },
+            {
+                "question": "একটি আয়তক্ষেত্রের দৈর্ঘ্য ৮ মিটার এবং প্রস্থ ৫ মিটার হলে এর ক্ষেত্রফল কত বর্গমিটার?",
+                "options": {"A": "২৬", "B": "১৩", "C": "৪০", "D": "৪৫"},
+                "correct": "C",
+                "explanation": "আয়তক্ষেত্রের ক্ষেত্রফল = দৈর্ঘ্য × প্রস্থ = ৮ × ৫ = ৪০ বর্গমিটার।",
+            },
+        ],
+    },
+    {
+        "class_level": "Class 5",
+        "subject": "English",
+        "title": "[Class 5] English: Grammar & Essential Vocabulary",
+        "topic": "Parts of Speech & Sentence Basics",
+        "difficulty": "easy",
+        "questions": [
+            {
+                "question": "Identify the Adjective in this sentence: 'The clever fox jumped over the fence.'",
+                "options": {"A": "fox", "B": "clever", "C": "jumped", "D": "fence"},
+                "correct": "B",
+                "explanation": "'Clever' describes the noun 'fox', making it an adjective.",
+            },
+            {
+                "question": "What is the past tense form of the verb 'write'?",
+                "options": {"A": "writed", "B": "wrote", "C": "written", "D": "writing"},
+                "correct": "B",
+                "explanation": "The past simple form of 'write' is 'wrote'.",
+            },
+            {
+                "question": "Choose the correct article: 'Dhaka is ___ historical city.'",
+                "options": {"A": "an", "B": "the", "C": "a", "D": "no article"},
+                "correct": "C",
+                "explanation": "'Historical' begins with a consonant sound /h/, so the indefinite article 'a' is used.",
+            },
+            {
+                "question": "What is the opposite word (antonym) of 'Ancient'?",
+                "options": {"A": "Old", "B": "Modern", "C": "Traditional", "D": "Historic"},
+                "correct": "B",
+                "explanation": "The antonym of 'Ancient' (প্রাচীন) is 'Modern' (আধুনিক).",
+            },
+        ],
+    },
+    {
+        "class_level": "Class 5",
+        "subject": "Bangla",
+        "title": "[Class 5] Bangla: ব্যাকরণ, যুক্তবর্ণ ও বিপরীত শব্দ",
+        "topic": "বাংলা ব্যাকরণ ও ভাষা রীতি",
+        "difficulty": "easy",
+        "questions": [
+            {
+                "question": "নিচের কোন যুক্তবর্ণটি 'জ্ঞ' তৈরিতে ব্যবহৃত হয়েছে?",
+                "options": {"A": "জ + ঞ", "B": "ঞ + জ", "C": "গ + ঞ", "D": "ক + ষ"},
+                "correct": "A",
+                "explanation": "জ এবং ঞ যুক্ত হয়ে 'জ্ঞ' গঠিত হয় (যেমন: জ্ঞান, বিজ্ঞান)।",
+            },
+            {
+                "question": "'অনুগ্রহ' শব্দের সঠিক বিপরীত শব্দ কোনটি?",
+                "options": {"A": "দয়া", "B": "নিগ্রহ", "C": "সহযোগিতা", "D": "আগ্রহ"},
+                "correct": "B",
+                "explanation": "'অনুগ্রহ' এর বিপরীত শব্দ হলো 'নিগ্রহ'।",
+            },
+            {
+                "question": "বাক্যের শেষে প্রশ্ন বা জিজ্ঞাসা বোঝাতে কোন বিরামচিহ্ন ব্যবহৃত হয়?",
+                "options": {"A": "দাঁড়ি (|)", "B": "কমা (,)", "C": "প্রশ্নবোধক চিহ্ন (?)", "D": "সেমিকোলন (;)"},
+                "correct": "C",
+                "explanation": "প্রশ্ন বা জিজ্ঞাসা জ্ঞাপনে প্রশ্নচিহ্ন (?) ব্যবহৃত হয়।",
+            },
+            {
+                "question": "'যার কোনো তুলনা নেই' - এককথায় প্রকাশ কী হবে?",
+                "options": {"A": "অতুলনীয়", "B": "অনুপম", "C": "অদ্বিতীয়", "D": "অপূর্ব"},
+                "correct": "A",
+                "explanation": "যার কোনো তুলনা নেই তাকে অতুলনীয় বলা হয়।",
+            },
+        ],
+    },
+    {
+        "class_level": "Class 5",
+        "subject": "Bangladesh & Global Studies",
+        "title": "[Class 5] Bangladesh & Global Studies: মুক্তিযুদ্ধ ও ভৌগোলিক পরিচয়",
+        "topic": "মুক্তিযুদ্ধ ও বাংলাদেশের সম্পদ",
+        "difficulty": "easy",
+        "questions": [
+            {
+                "question": "বাংলাদেশের মহান মুক্তিযুদ্ধ কত মাস স্থায়ী হয়েছিল?",
+                "options": {"A": "৭ মাস", "B": "৯ মাস", "C": "১১ মাস", "D": "১২ মাস"},
+                "correct": "B",
+                "explanation": "১৯৭১ সালের ২৬শে মার্চ থেকে ১৬ই ডিসেম্বর পর্যন্ত মোট ৯ মাস মুক্তিযুদ্ধ স্থায়ী হয়েছিল।",
+            },
+            {
+                "question": "মুক্তিযুদ্ধে বীরত্বের জন্য সর্বোচ্চ সামরিক খেতাব কোনটি?",
+                "options": {"A": "বীর বিক্রম", "B": "বীর প্রতীক", "C": "বীর উত্তম", "D": "বীরশ্রেষ্ঠ"},
+                "correct": "D",
+                "explanation": "মুক্তিযুদ্ধের সর্বোচ্চ বীরত্বসূচক রাষ্ট্রীয় উপাধি হলো 'বীরশ্রেষ্ঠ' (মোট ৭ জন)।",
+            },
+            {
+                "question": "বিশ্বের বৃহত্তম ম্যানগ্রোভ বন সুন্দরবন বাংলাদেশের কোন অঞ্চলে অবস্থিত?",
+                "options": {"A": "দক্ষিণ-পশ্চিমাঞ্চল", "B": "উত্তর-পূর্বাঞ্চল", "C": "দক্ষিণ-পূর্বাঞ্চল", "D": "উত্তরাঞ্চল"},
+                "correct": "A",
+                "explanation": "সুন্দরবন বাংলাদেশের দক্ষিণ-পশ্চিম উপকূলবর্তী খুলনা, বাগেরহাট ও সাতক্ষীরা জেলায় অবস্থিত।",
+            },
+        ],
+    },
+    {
+        "class_level": "Class 5",
+        "subject": "Islam & Moral Education",
+        "title": "[Class 5] Islam & Moral Education: আকাইদ ও নৈতিক চরিত্র",
+        "topic": "ঈমান, নামাজ ও নৈতিক মূল্যবোধ",
+        "difficulty": "easy",
+        "questions": [
+            {
+                "question": "আল্লাহ তায়ালার একত্ববাদে মনে-প্রাণে বিশ্বাস করার নাম কী?",
+                "options": {"A": "শিরক", "B": "তাওহীদ", "C": "রিসালাত", "D": "আখিরাত"},
+                "correct": "B",
+                "explanation": "এক আল্লাহকে একমাত্র উপাস্য ও রব হিসেবে বিশ্বাস করার নাম তাওহীদ।",
+            },
+            {
+                "question": "প্রতিদিন মুসলমানদের ওপর কয় ওয়াক্ত নামাজ ফরজ করা হয়েছে?",
+                "options": {"A": "৩ ওয়াক্ত", "B": "৪ ওয়াক্ত", "C": "৫ ওয়াক্ত", "D": "৭ ওয়াক্ত"},
+                "correct": "C",
+                "explanation": "প্রতিদিন পাঁচ ওয়াক্ত (ফজর, যোহর, আসর, মাগরিব, এশা) নামাজ ফরজ।",
+            },
+            {
+                "question": "পিতামাতা ও বড়দের প্রতি একজন আদর্শ শিক্ষার্থীর প্রধান কর্তব্য কী?",
+                "options": {"A": "শ্রদ্ধা ও সম্মান প্রদর্শন করা", "B": "উপেক্ষা করা", "C": "তর্ক করা", "D": "কথা না শোনা"},
+                "correct": "A",
+                "explanation": "বড়দের প্রতি শ্রদ্ধা ও বিনম্র আচরণ নৈতিক শিক্ষার অন্যতম শ্রেষ্ঠ আদর্শ।",
+            },
+        ],
+    },
     # ========================== CLASS 6 ==========================
     {
         "class_level": "Class 6",
@@ -1281,9 +1486,17 @@ def seed_class_quizzes_for_user(user_id: int) -> int:
 
 
 # =============================================================================
-# Curriculum Subjects for Class 6 to Class 12
+# Curriculum Subjects for Class 5 to Class 12
 # =============================================================================
 CURRICULUM_SUBJECTS = [
+    # Class 5
+    {"class_level": "Class 5", "name": "Class 5: Primary Science", "code": "SCI-05", "color_hex": "#10B981"},
+    {"class_level": "Class 5", "name": "Class 5: Mathematics", "code": "MTH-05", "color_hex": "#3B82F6"},
+    {"class_level": "Class 5", "name": "Class 5: English", "code": "ENG-05", "color_hex": "#8B5CF6"},
+    {"class_level": "Class 5", "name": "Class 5: Bangla", "code": "BAN-05", "color_hex": "#EC4899"},
+    {"class_level": "Class 5", "name": "Class 5: Bangladesh & Global Studies", "code": "BGS-05", "color_hex": "#F59E0B"},
+    {"class_level": "Class 5", "name": "Class 5: Islam & Moral Education", "code": "MOR-05", "color_hex": "#84CC16"},
+
     # Class 6
     {"class_level": "Class 6", "name": "Class 6: General Science", "code": "SCI-06", "color_hex": "#10B981"},
     {"class_level": "Class 6", "name": "Class 6: Mathematics", "code": "MTH-06", "color_hex": "#3B82F6"},

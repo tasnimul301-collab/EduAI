@@ -21,6 +21,20 @@ def _ensure_demo_cq_for_user(user_id: int):
 
     sample_cqs = [
         {
+            "class_level": "Class 5",
+            "subject_name": "Primary Science",
+            "chapter_topic": "আমাদের পরিবেশ ও বাস্তুসংস্থান (Environment & Ecosystem)",
+            "stimulus": "একটি বিদ্যালয়ের বাগানে সবুজ ঘাস, বিভিন্ন ফুলের গাছ, প্রজাপতি, ব্যাঙ এবং কিছু ঘাসফড়িং বাস করে। শিক্ষার্থীরা লক্ষ্য করল তীব্র খরায় ঘাস মরে যাওয়ায় ঘাসফড়িংয়ের সংখ্যা অনেক কমে গেল এবং পরে ব্যাঙের সংখ্যাও হ্রাস পেল।",
+            "question_a": "ক. খাদ্যশৃঙ্খল (Food Chain) কী? (১)",
+            "answer_a": "উদ্ভিদ উৎস থেকে বিভিন্ন প্রাণীর মধ্যে একে অপরকে খাওয়ার মাধ্যমে শক্তি স্থানান্তরের ধারাবাহিক প্রক্রিয়াই হলো খাদ্যশৃঙ্খল।",
+            "question_b": "খ. সবুজ উদ্ভিদকে উৎপাদক বলা হয় কেন? (২)",
+            "answer_b": "সবুজ উদ্ভিদ সূর্যালোক এবং ক্লোরোফিলের সাহায্যে পরিবেশের পানি ও কার্বন ডাই-অক্সাইড ব্যবহার করে সালোকসংশ্লেষণ প্রক্রিয়ায় নিজের খাদ্য নিজেই তৈরি করতে পারে। অন্য কোনো প্রাণী খাদ্য তৈরি করতে পারে না, তাই উদ্ভিদকে উৎপাদক বলা হয়।",
+            "question_c": "গ. উদ্দীপকের পরিবেশে একটি সম্পূর্ণ খাদ্যশৃঙ্খল তৈরি করে প্রবাহচিত্রের মাধ্যমে ব্যাখ্যা করো। (৩)",
+            "answer_c": "উদ্দীপকের তথ্য অনুযায়ী খাদ্যশৃঙ্খলটি হলো:\nসবুজ ঘাস (উৎপাদক) ➔ ঘাসফড়িং (প্রথম স্তরের খাদক) ➔ ব্যাঙ (দ্বিতীয় স্তরের খাদক)।\n\nএখানে সবুজ ঘাস সূর্যালোক থেকে শক্তি সঞ্চয় করে। ঘাসফড়িং ঘাস খেয়ে বেঁচে থাকে এবং পরবর্তীতে ব্যাঙ ঘাসফড়িংকে খাদ্য হিসেবে গ্রহণ করে শক্তি লাভ করে।",
+            "question_d": "ঘ. 'খাদ্যশৃঙ্খলের একটি উপাদানের সংকট পুরো বাস্তুসংস্থানের ভারসাম্যে প্রভাব ফেলে' — উদ্দীপকের আলোকে বিশ্লেষণ করো। (৪)",
+            "answer_d": "উদ্দীপকে দেখা যায়, খরার কারণে উৎপাদক (ঘাস) বিনষ্ট হওয়ায় প্রথম স্তরের খাদক ঘাসফড়িং খাদ্যাভাবে মারা যায়। ফলে ঘাসফড়িংয়ের ওপর নির্ভরশীল দ্বিতীয় স্তরের খাদক ব্যাঙও অনাহারে সংকটগ্রস্ত হয়ে পড়ে।\nসুতরাং, খাদ্যশৃঙ্খলের কোনো একটি স্তরে বিপর্যয় ঘটলে পরবর্তী প্রতিটি স্তরের খাদকেরা সরাসরি ক্ষতিগ্রস্ত হয় এবং সার্বিক পরিবেশের বাস্তুসংস্থানিক ভারসাম্য নষ্ট হয়।",
+        },
+        {
             "class_level": "Class 10",
             "subject_name": "Physics",
             "chapter_topic": "গতি ও বল (Motion & Force)",
@@ -74,11 +88,12 @@ def _ensure_demo_cq_for_user(user_id: int):
 @cq_bp.route("/")
 @login_required
 def index():
-    """List Creative Questions with Class 6-12 filtering."""
+    """List Creative Questions with Class 5-12 filtering."""
     user = get_current_user()
     _ensure_demo_cq_for_user(user.id)
 
-    cqs = CreativeQuestion.query.filter_by(user_id=user.id).order_by(CreativeQuestion.created_at.desc()).all()
+    # All students and admins can see and practice the full collection of CQs
+    cqs = CreativeQuestion.query.order_by(CreativeQuestion.created_at.desc()).all()
     return render_template(
         "cq/index.html",
         user=user,
@@ -93,15 +108,19 @@ def index():
 def view_cq(cq_id):
     """View full stimulus and interactive revealable model answers."""
     user = get_current_user()
-    cq = CreativeQuestion.query.filter_by(id=cq_id, user_id=user.id).first_or_404()
+    cq = CreativeQuestion.query.filter_by(id=cq_id).first_or_404()
     return render_template("cq/view.html", user=user, cq=cq)
 
 
 @cq_bp.route("/generate", methods=["POST"])
 @login_required
 def generate():
-    """Trigger AI generation of a new Board-style Creative Question."""
+    """Trigger AI generation of a new Board-style Creative Question (Admin only)."""
     user = get_current_user()
+
+    if user.role != "admin":
+        flash("Only administrators have permission to generate or add new Creative Questions.", "danger")
+        return redirect(url_for("cq.index"))
 
     class_level = request.form.get("class_level", "Class 10").strip()
     subject_name = request.form.get("curriculum_subject", "Physics").strip()
@@ -150,9 +169,14 @@ def generate():
 @cq_bp.route("/delete/<int:cq_id>", methods=["POST"])
 @login_required
 def delete_cq(cq_id):
-    """Delete a Creative Question."""
+    """Delete a Creative Question (Admin only)."""
     user = get_current_user()
-    cq = CreativeQuestion.query.filter_by(id=cq_id, user_id=user.id).first_or_404()
+
+    if user.role != "admin":
+        flash("Only administrators have permission to delete Creative Questions.", "danger")
+        return redirect(url_for("cq.index"))
+
+    cq = CreativeQuestion.query.filter_by(id=cq_id).first_or_404()
     db.session.delete(cq)
     db.session.commit()
     flash("Creative question deleted.", "info")

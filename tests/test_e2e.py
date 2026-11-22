@@ -456,10 +456,11 @@ class EduSmartE2ETestCase(unittest.TestCase):
     # 6. Assignments Tracker & Overdue Logic
     # =========================================================================
     def test_e2e_assignment_tracking_and_deadline_notification(self):
-        """Test assignment creation, automatic reminder notification, and status toggle."""
+        """Test assignment creation by admin, automatic reminder notification, and student status toggle."""
+        # Admin creates assignment
         self.client.post(
             "/auth/login",
-            data={"identifier": "student_e2e", "password": "StudentPass123!"},
+            data={"identifier": "admin_e2e", "password": "AdminPass123!"},
             follow_redirects=True,
         )
 
@@ -482,12 +483,18 @@ class EduSmartE2ETestCase(unittest.TestCase):
         self.assertIsNotNone(assign)
         self.assertFalse(assign.is_overdue())
 
-        # Verify automated deadline notification created
+        # Verify automated deadline notification created for student
         notif = Notification.query.filter_by(user_id=self.student.id, type="deadline").first()
         self.assertIsNotNone(notif)
         self.assertIn("Distributed Consensus Lab", notif.title)
 
-        # Toggle assignment to submitted
+        # Student logs in and toggles assignment to submitted
+        self.client.get("/auth/logout", follow_redirects=True)
+        self.client.post(
+            "/auth/login",
+            data={"identifier": "student_e2e", "password": "StudentPass123!"},
+            follow_redirects=True,
+        )
         toggle_res = self.client.post(f"/assignments/{assign.id}/toggle", follow_redirects=True)
         self.assertEqual(toggle_res.status_code, 200)
         db.session.refresh(assign)
@@ -553,10 +560,11 @@ class EduSmartE2ETestCase(unittest.TestCase):
     # 9. AI Quiz Generation, Test Taking & Auto-Grading
     # =========================================================================
     def test_e2e_quiz_flow_with_mocked_ai(self):
-        """Test quiz generation with mocked Gemini AI, test taking, and scoring."""
+        """Test quiz generation with mocked Gemini AI by admin, test taking by student, and scoring."""
+        # Admin creates quiz
         self.client.post(
             "/auth/login",
-            data={"identifier": "student_e2e", "password": "StudentPass123!"},
+            data={"identifier": "admin_e2e", "password": "AdminPass123!"},
             follow_redirects=True,
         )
 
@@ -582,7 +590,7 @@ class EduSmartE2ETestCase(unittest.TestCase):
                 "error": None,
             }
 
-            # Generate Quiz
+            # Generate Quiz as Admin
             res = self.client.post(
                 "/quiz/generate",
                 data={"topic": "Data Structures Basics", "difficulty": "easy", "count": "2"},
@@ -595,7 +603,13 @@ class EduSmartE2ETestCase(unittest.TestCase):
             self.assertIsNotNone(quiz)
             self.assertEqual(len(quiz.questions), 2)
 
-            # Take and Submit Quiz: Q1 correct ('B'), Q2 incorrect ('A')
+            # Student logs in to take and submit Quiz: Q1 correct ('B'), Q2 incorrect ('A')
+            self.client.get("/auth/logout", follow_redirects=True)
+            self.client.post(
+                "/auth/login",
+                data={"identifier": "student_e2e", "password": "StudentPass123!"},
+                follow_redirects=True,
+            )
             q1, q2 = quiz.questions[0], quiz.questions[1]
             submit_data = {
                 f"question_{q1.id}": "B",

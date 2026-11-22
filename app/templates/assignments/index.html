@@ -14,9 +14,11 @@
     </div>
   </div>
   <div class="col-md-6 text-md-end">
+    {% if user.role == 'admin' %}
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAssignmentModal">
       <i class="bi bi-plus-lg me-2"></i>Add Assignment
     </button>
+    {% endif %}
   </div>
 </div>
 
@@ -39,7 +41,8 @@
             </button>
           </form>
 
-          <!-- Delete assignment -->
+          {% if user.role == 'admin' %}
+          <!-- Delete assignment (Admin only) -->
           <form method="POST" action="{{ url_for('assignments.index') }}" onsubmit="return confirm('Delete this assignment?');">
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="assignment_id" value="{{ assign.id }}">
@@ -47,6 +50,7 @@
               <i class="bi bi-trash"></i>
             </button>
           </form>
+          {% endif %}
         </div>
       </div>
 
@@ -82,15 +86,18 @@
   <div class="text-muted">
     <i class="bi bi-clipboard2-x fs-1 d-block mb-2"></i>
     <h6>No Assignments in this View</h6>
-    <p class="small mb-3">Add academic homework, term papers, and lab reports to keep track of deadlines.</p>
+    <p class="small mb-3">Coursework and homework tasks assigned by administrators will appear here.</p>
+    {% if user.role == 'admin' %}
     <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addAssignmentModal">
       Create Assignment
     </button>
+    {% endif %}
   </div>
 </div>
 {% endif %}
 
-<!-- Add Assignment Modal -->
+{% if user.role == 'admin' %}
+<!-- Add Assignment Modal (Admin Only) -->
 <div class="modal fade" id="addAssignmentModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content border-0 shadow-lg">
@@ -141,4 +148,5 @@
     </div>
   </div>
 </div>
+{% endif %}
 {% endblock %}

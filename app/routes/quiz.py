@@ -18,12 +18,14 @@ quiz_bp = Blueprint("quiz", __name__, url_prefix="/quiz")
 @quiz_bp.route("/")
 @login_required
 def index():
-    """List student quizzes and past attempt history."""
+    """List quizzes across Class 5-12, randomized on refresh so students encounter fresh quizzes."""
     user = get_current_user()
-    # Ensure Class 6 to Class 12 curriculum quizzes are pre-seeded for this user
+    from sqlalchemy.sql.expression import func
+    # Ensure Class 5 to Class 12 curriculum quizzes are pre-seeded for this user
     seed_class_quizzes_for_user(user.id)
 
-    quizzes = Quiz.query.filter_by(user_id=user.id).order_by(Quiz.created_at.desc()).all()
+    # Order by random so each refresh dynamically surfaces fresh quizzes across all classes
+    quizzes = Quiz.query.order_by(func.random()).all()
     attempts = (
         QuizAttempt.query.filter_by(user_id=user.id)
         .order_by(QuizAttempt.completed_at.desc())
@@ -46,8 +48,12 @@ def index():
 @quiz_bp.route("/generate", methods=["POST"])
 @login_required
 def generate():
-    """Trigger AI generation of a new multiple-choice quiz."""
+    """Trigger AI generation of a new multiple-choice quiz (Admin only)."""
     user = get_current_user()
+
+    if user.role != "admin":
+        flash("Only administrators have permission to generate or add new quizzes.", "danger")
+        return redirect(url_for("quiz.index"))
 
     class_level = request.form.get("class_level", "Class 10").strip()
     curriculum_subject = request.form.get("curriculum_subject", "").strip()
@@ -126,7 +132,7 @@ def generate():
 def take(quiz_id):
     """Interactive quiz-taking interface."""
     user = get_current_user()
-    quiz = Quiz.query.filter_by(id=quiz_id, user_id=user.id).first_or_404()
+    quiz = Quiz.query.filter_by(id=quiz_id).first_or_404()
     return render_template("quiz/take.html", user=user, quiz=quiz)
 
 
@@ -135,7 +141,7 @@ def take(quiz_id):
 def submit(quiz_id):
     """Evaluate submitted quiz answers and store attempt results."""
     user = get_current_user()
-    quiz = Quiz.query.filter_by(id=quiz_id, user_id=user.id).first_or_404()
+    quiz = Quiz.query.filter_by(id=quiz_id).first_or_404()
 
     score = 0
     total = len(quiz.questions)

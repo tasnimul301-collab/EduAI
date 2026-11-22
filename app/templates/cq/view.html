@@ -15,11 +15,13 @@
         <button class="btn btn-outline-primary btn-sm" onclick="window.print()">
           <i class="bi bi-printer me-1"></i>প্রিন্ট / PDF সংরক্ষণ
         </button>
+        {% if user.role == 'admin' %}
         <form method="POST" action="{{ url_for('cq.delete_cq', cq_id=cq.id) }}" onsubmit="return confirm('এই সৃজনশীল প্রশ্নটি মুছে ফেলতে চান?');" class="d-inline">
           <button type="submit" class="btn btn-outline-danger btn-sm">
             <i class="bi bi-trash me-1"></i>মুছে ফেলুন
           </button>
         </form>
+        {% endif %}
       </div>
     </div>
 
@@ -148,9 +150,15 @@
         <button class="btn btn-outline-secondary btn-sm" onclick="toggleAllAnswers()">
           <i class="bi bi-arrows-expand me-1"></i>সকল উত্তর একসাথে দেখুন / লুকান
         </button>
+        {% if user.role == 'admin' %}
         <a href="{{ url_for('cq.index') }}" class="btn btn-primary btn-sm px-4">
           <i class="bi bi-plus-circle me-1"></i>নতুন CQ তৈরি করুন
         </a>
+        {% else %}
+        <a href="{{ url_for('cq.index') }}" class="btn btn-primary btn-sm px-4">
+          <i class="bi bi-arrow-left me-1"></i>সকল প্রশ্ন দেখুন (Back)
+        </a>
+        {% endif %}
       </div>
     </div>
   </div>
