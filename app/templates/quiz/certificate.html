@@ -148,7 +148,7 @@
     <div class="d-flex justify-content-center align-items-center gap-4 my-4">
       <div class="p-2 px-4 rounded bg-light border">
         <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.75rem;">Score Achieved</div>
-        <div class="fs-5 fw-bold text-dark">{{ attempt.score }} / {{ attempt.total_questions }}</div>
+        <div class="fs-5 fw-bold text-dark">{{ attempt.score }} / {{ attempt.total_score }}</div>
       </div>
 
       <!-- Golden Seal -->
@@ -166,7 +166,7 @@
     <!-- Signatures & Verification ID Footer -->
     <div class="row pt-4 mt-4 border-top border-secondary-subtle align-items-end text-start">
       <div class="col-4 text-center">
-        <div class="fw-bold text-dark" style="font-family: 'Cinzel', serif;">{{ attempt.created_at.strftime('%B %d, %Y') }}</div>
+        <div class="fw-bold text-dark" style="font-family: 'Cinzel', serif;">{{ (attempt.completed_at or attempt.created_at).strftime('%B %d, %Y') }}</div>
         <div class="border-top border-dark pt-1 small text-muted">Issue Date</div>
       </div>
 
@@ -178,7 +178,7 @@
       </div>
 
       <div class="col-4 text-center">
-        <div class="fw-bold text-dark small" style="letter-spacing: 0.5px;">EDUSMART-{{ attempt.id }}-{{ attempt.created_at.strftime('%Y%m%d') }}</div>
+        <div class="fw-bold text-dark small" style="letter-spacing: 0.5px;">EDUSMART-{{ attempt.id }}-{{ (attempt.completed_at or attempt.created_at).strftime('%Y%m%d') }}</div>
         <div class="border-top border-dark pt-1 small text-muted">Certificate ID</div>
       </div>
     </div>

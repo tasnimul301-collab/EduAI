@@ -1,58 +1,149 @@
 {% extends "base.html" %}
 
-{% block title %}Smart Study Planner - EduSmart AI{% endblock %}
-{% block page_title %}Smart Study Planner{% endblock %}
+{% block title %}Smart Study Planner & Focus Timer - EduSmart AI{% endblock %}
+{% block page_title %}Smart Study Planner & Focus Hub{% endblock %}
 
 {% block content %}
-<!-- Top Header & Progress Row -->
-<div class="row g-3 mb-4 align-items-center">
-  <div class="col-md-6">
-    <div class="card border-0 shadow-sm p-3">
-      <div class="d-flex justify-content-between align-items-center mb-1">
-        <span class="small fw-semibold text-muted">Study Plan Completion Rate</span>
-        <span class="fw-bold text-primary">{{ completion_rate }}%</span>
-      </div>
-      <div class="progress" style="height: 8px;">
-        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ completion_rate }}%;"></div>
-      </div>
-      <div class="small text-muted mt-2">
-        <strong>{{ completed_count }}</strong> completed of <strong>{{ total_count }}</strong> planned tasks
-      </div>
+<!-- Exam Milestones Countdown Banner -->
+<div class="card border-0 shadow-sm p-4 mb-4" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: white;">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+    <div>
+      <h5 class="fw-bold mb-1"><i class="bi bi-bullseye text-warning me-2"></i>Exam Target & Countdown Milestones</h5>
+      <div class="small opacity-75">Stay focused with real-time countdown to your SSC, HSC, or semester finals</div>
     </div>
-  </div>
-
-  <div class="col-md-6 text-md-end">
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTaskModal">
-      <i class="bi bi-plus-lg me-2"></i>Schedule Study Task
+    <button class="btn btn-warning btn-sm fw-bold px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addExamGoalModal">
+      <i class="bi bi-plus-circle me-1"></i>Set New Target Milestone
     </button>
   </div>
+
+  {% if exam_goals %}
+  <div class="row g-3">
+    {% for goal in exam_goals %}
+    <div class="col-md-6 col-lg-4">
+      <div class="p-3 rounded-3 bg-white bg-opacity-10 border border-white border-opacity-25 position-relative">
+        <form method="POST" action="{{ url_for('planner.index') }}" onsubmit="return confirm('Remove this exam target?');" class="position-absolute top-0 end-0 p-2">
+          <input type="hidden" name="action" value="delete_exam_goal">
+          <input type="hidden" name="goal_id" value="{{ goal.id }}">
+          <button type="submit" class="btn btn-link text-white-50 p-0 text-decoration-none" title="Remove Milestone">
+            <i class="bi bi-x-circle"></i>
+          </button>
+        </form>
+
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="badge bg-warning text-dark fw-bold">{{ goal.class_level }}</span>
+          <span class="badge bg-light text-dark fw-semibold">Target: {{ goal.target_grade }}</span>
+        </div>
+        <h6 class="fw-bold mb-2 text-white">{{ goal.title }}</h6>
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="small opacity-75">Date: {{ goal.exam_date.strftime('%b %d, %Y') }}</div>
+          <div class="fs-4 fw-extrabold text-warning">
+            {% set rem = goal.days_remaining() %}
+            {% if rem < 0 %}
+              <span class="badge bg-danger">Completed</span>
+            {% elif rem == 0 %}
+              <span class="badge bg-danger">Today!</span>
+            {% else %}
+              {{ rem }} <span class="fs-6 fw-normal">days left</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="p-3 rounded bg-white bg-opacity-10 border border-white border-opacity-20 d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div class="small">No active exam target set yet. Setting an exam target keeps you motivated and awards +15 Academic Points!</div>
+    <button class="btn btn-light btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#addExamGoalModal">
+      Add Your First Target
+    </button>
+  </div>
+  {% endif %}
 </div>
 
-<!-- Filter Tabs -->
-<div class="card border-0 shadow-sm p-3 mb-4">
-  <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
-    <!-- Timeframe Filters -->
-    <div class="btn-group btn-group-sm">
-      <a href="{{ url_for('planner.index', timeframe='all', status=current_status, priority=current_priority) }}" class="btn btn-{{ 'primary' if current_timeframe == 'all' else 'outline-secondary' }}">All Days</a>
-      <a href="{{ url_for('planner.index', timeframe='today', status=current_status, priority=current_priority) }}" class="btn btn-{{ 'primary' if current_timeframe == 'today' else 'outline-secondary' }}">Due Today</a>
-      <a href="{{ url_for('planner.index', timeframe='week', status=current_status, priority=current_priority) }}" class="btn btn-{{ 'primary' if current_timeframe == 'week' else 'outline-secondary' }}">Next 7 Days</a>
+<!-- Main Row: Pomodoro Focus Timer & Study Plan Stats -->
+<div class="row g-4 mb-4">
+  <!-- Pomodoro Focus Timer with Web Audio Sounds -->
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm p-4 h-100 text-center">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-clock-history text-danger me-2"></i>Pomodoro Focus Timer</h6>
+        <span class="badge bg-danger-subtle text-danger px-2 py-1" id="pomodoroModeBadge">Focus Mode</span>
+      </div>
+
+      <!-- Mode Selector Tabs -->
+      <div class="btn-group btn-group-sm mb-4 w-100" role="group">
+        <button type="button" class="btn btn-outline-danger active" id="btnFocus" onclick="setTimerMode('focus')">Focus (25m)</button>
+        <button type="button" class="btn btn-outline-danger" id="btnShort" onclick="setTimerMode('short')">Short Break (5m)</button>
+        <button type="button" class="btn btn-outline-danger" id="btnLong" onclick="setTimerMode('long')">Long Break (15m)</button>
+      </div>
+
+      <!-- Big Digits Display -->
+      <div class="display-3 fw-extrabold text-dark mb-3" id="timerDisplay" style="font-variant-numeric: tabular-nums;">
+        25:00
+      </div>
+
+      <!-- Timer Control Buttons -->
+      <div class="d-flex justify-content-center gap-2 mb-4">
+        <button class="btn btn-danger px-4 py-2 fw-semibold" id="startTimerBtn" onclick="toggleTimer()">
+          <i class="bi bi-play-fill me-1" id="playIcon"></i>Start Session
+        </button>
+        <button class="btn btn-outline-secondary px-3 py-2" onclick="resetTimer()">
+          <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+        </button>
+      </div>
+
+      <!-- Ambient Soundscape Player (Synthesized client-side) -->
+      <div class="p-3 bg-light rounded-3 text-start border">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <small class="fw-bold text-dark"><i class="bi bi-headphones me-1 text-primary"></i>Ambient Focus Sound</small>
+          <span class="badge bg-secondary-subtle text-secondary small" id="soundStatusBadge">Off</span>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <button class="btn btn-sm btn-outline-secondary sound-btn active" id="sndOff" onclick="setAmbientSound('off')">Off</button>
+          <button class="btn btn-sm btn-outline-secondary sound-btn" id="sndRain" onclick="setAmbientSound('rain')">🌧️ Rain</button>
+          <button class="btn btn-sm btn-outline-secondary sound-btn" id="sndWhite" onclick="setAmbientSound('white')">📻 White Noise</button>
+          <button class="btn btn-sm btn-outline-secondary sound-btn" id="sndLofi" onclick="setAmbientSound('lofi')">☕ Lofi Chimes</button>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <!-- Status Filters -->
-    <div class="d-flex gap-2">
-      <select class="form-select form-select-sm" onchange="location = this.value;">
-        <option value="{{ url_for('planner.index', status='all', timeframe=current_timeframe, priority=current_priority) }}" {% if current_status == 'all' %}selected{% endif %}>Status: All</option>
-        <option value="{{ url_for('planner.index', status='pending', timeframe=current_timeframe, priority=current_priority) }}" {% if current_status == 'pending' %}selected{% endif %}>Status: Pending</option>
-        <option value="{{ url_for('planner.index', status='in_progress', timeframe=current_timeframe, priority=current_priority) }}" {% if current_status == 'in_progress' %}selected{% endif %}>Status: In Progress</option>
-        <option value="{{ url_for('planner.index', status='completed', timeframe=current_timeframe, priority=current_priority) }}" {% if current_status == 'completed' %}selected{% endif %}>Status: Completed</option>
-      </select>
+  <!-- Study Plan Completion & Quick Add -->
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm p-4 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h6 class="fw-bold mb-1 text-dark"><i class="bi bi-check2-square text-primary me-2"></i>Study Plan Progress</h6>
+          <div class="small text-muted"><strong>{{ completed_count }}</strong> of <strong>{{ total_count }}</strong> tasks completed</div>
+        </div>
+        <button class="btn btn-primary btn-sm px-3" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+          <i class="bi bi-plus-lg me-1"></i>Add Study Task
+        </button>
+      </div>
 
-      <select class="form-select form-select-sm" onchange="location = this.value;">
-        <option value="{{ url_for('planner.index', priority='all', timeframe=current_timeframe, status=current_status) }}" {% if current_priority == 'all' %}selected{% endif %}>Priority: All</option>
-        <option value="{{ url_for('planner.index', priority='high', timeframe=current_timeframe, status=current_status) }}" {% if current_priority == 'high' %}selected{% endif %}>Priority: High</option>
-        <option value="{{ url_for('planner.index', priority='medium', timeframe=current_timeframe, status=current_status) }}" {% if current_priority == 'medium' %}selected{% endif %}>Priority: Medium</option>
-        <option value="{{ url_for('planner.index', priority='low', timeframe=current_timeframe, status=current_status) }}" {% if current_priority == 'low' %}selected{% endif %}>Priority: Low</option>
-      </select>
+      <div class="progress mb-4" style="height: 12px; border-radius: 6px;">
+        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ completion_rate }}%;">
+          {{ completion_rate }}%
+        </div>
+      </div>
+
+      <!-- Timeframe and Status Filters -->
+      <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between pt-2 border-top">
+        <div class="btn-group btn-group-sm">
+          <a href="{{ url_for('planner.index', timeframe='all', status=current_status, priority=current_priority) }}" class="btn btn-{{ 'primary' if current_timeframe == 'all' else 'outline-secondary' }}">All Days</a>
+          <a href="{{ url_for('planner.index', timeframe='today', status=current_status, priority=current_priority) }}" class="btn btn-{{ 'primary' if current_timeframe == 'today' else 'outline-secondary' }}">Due Today</a>
+          <a href="{{ url_for('planner.index', timeframe='week', status=current_status, priority=current_priority) }}" class="btn btn-{{ 'primary' if current_timeframe == 'week' else 'outline-secondary' }}">Next 7 Days</a>
+        </div>
+
+        <div class="d-flex gap-2">
+          <select class="form-select form-select-sm" onchange="location = this.value;">
+            <option value="{{ url_for('planner.index', status='all', timeframe=current_timeframe, priority=current_priority) }}" {% if current_status == 'all' %}selected{% endif %}>Status: All</option>
+            <option value="{{ url_for('planner.index', status='pending', timeframe=current_timeframe, priority=current_priority) }}" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="{{ url_for('planner.index', status='completed', timeframe=current_timeframe, priority=current_priority) }}" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
+          </select>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -83,7 +174,7 @@
         </div>
       </div>
 
-      <h6 class="fw-bold mb-1 {% if task.status == 'completed' %}text-decoration-line-through text-muted{% endif %}">
+      <h6 class="fw-bold mb-1 {% if task.status == 'completed' %}text-decoration-line-through text-muted{% endif %} text-dark">
         {{ task.title }}
       </h6>
 
@@ -167,4 +258,263 @@
     </div>
   </div>
 </div>
+
+<!-- Add Exam Goal Modal -->
+<div class="modal fade" id="addExamGoalModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold"><i class="bi bi-bullseye text-warning me-2"></i>Set Target Exam Milestone</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('planner.index') }}">
+        <input type="hidden" name="action" value="create_exam_goal">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Exam Milestone Name</label>
+            <input type="text" name="title" class="form-control" placeholder="e.g. SSC Exam 2027 or Final Term Chemistry" required>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Class / Academic Level</label>
+              <select name="class_level" class="form-select">
+                <option value="Class 6">Class 6</option>
+                <option value="Class 7">Class 7</option>
+                <option value="Class 8">Class 8</option>
+                <option value="Class 9">Class 9</option>
+                <option value="Class 10" selected>Class 10 (SSC)</option>
+                <option value="Class 11">Class 11 (HSC 1st)</option>
+                <option value="Class 12">Class 12 (HSC 2nd)</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Target Grade / Goal</label>
+              <input type="text" name="target_grade" class="form-control" value="GPA 5.00 (A+)" required>
+            </div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">Target Exam Date</label>
+            <input type="date" name="exam_date" class="form-control" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-warning btn-sm fw-bold px-3">Save Target (+15 Pts)</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // --- Pomodoro Focus Timer ---
+  let timerInterval = null;
+  let remainingSeconds = 25 * 60;
+  let currentMode = 'focus';
+  let isTimerRunning = false;
+
+  const timerDisplay = document.getElementById('timerDisplay');
+  const playIcon = document.getElementById('playIcon');
+  const startTimerBtn = document.getElementById('startTimerBtn');
+  const pomodoroModeBadge = document.getElementById('pomodoroModeBadge');
+
+  function updateTimerDisplay() {
+    const minutes = Math.floor(remainingSeconds / 60);
+    const seconds = remainingSeconds % 60;
+    timerDisplay.innerText = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+
+  function setTimerMode(mode) {
+    if (isTimerRunning) toggleTimer();
+    currentMode = mode;
+    document.getElementById('btnFocus').classList.toggle('active', mode === 'focus');
+    document.getElementById('btnShort').classList.toggle('active', mode === 'short');
+    document.getElementById('btnLong').classList.toggle('active', mode === 'long');
+
+    if (mode === 'focus') {
+      remainingSeconds = 25 * 60;
+      pomodoroModeBadge.innerText = 'Focus Mode (25m)';
+      pomodoroModeBadge.className = 'badge bg-danger-subtle text-danger px-2 py-1';
+    } else if (mode === 'short') {
+      remainingSeconds = 5 * 60;
+      pomodoroModeBadge.innerText = 'Short Break (5m)';
+      pomodoroModeBadge.className = 'badge bg-success-subtle text-success px-2 py-1';
+    } else if (mode === 'long') {
+      remainingSeconds = 15 * 60;
+      pomodoroModeBadge.innerText = 'Long Break (15m)';
+      pomodoroModeBadge.className = 'badge bg-info-subtle text-info px-2 py-1';
+    }
+    updateTimerDisplay();
+  }
+
+  function toggleTimer() {
+    if (isTimerRunning) {
+      clearInterval(timerInterval);
+      isTimerRunning = false;
+      playIcon.className = 'bi bi-play-fill me-1';
+      startTimerBtn.childNodes[1].nodeValue = ' Resume';
+    } else {
+      isTimerRunning = true;
+      playIcon.className = 'bi bi-pause-fill me-1';
+      startTimerBtn.childNodes[1].nodeValue = ' Pause';
+
+      timerInterval = setInterval(() => {
+        if (remainingSeconds > 0) {
+          remainingSeconds--;
+          updateTimerDisplay();
+        } else {
+          clearInterval(timerInterval);
+          isTimerRunning = false;
+          playIcon.className = 'bi bi-play-fill me-1';
+          startTimerBtn.childNodes[1].nodeValue = ' Start Session';
+          alert(currentMode === 'focus' ? '🎉 Focus session finished! Take a well-earned break.' : '⏰ Break is over! Time to focus again.');
+          setTimerMode(currentMode === 'focus' ? 'short' : 'focus');
+        }
+      }, 1000);
+    }
+  }
+
+  function resetTimer() {
+    if (isTimerRunning) toggleTimer();
+    setTimerMode(currentMode);
+  }
+
+  // --- Web Audio API Ambient Soundscapes (Zero external files needed) ---
+  let audioCtx = null;
+  let activeNoiseNode = null;
+  let activeGainNode = null;
+  let lofiInterval = null;
+
+  function initAudioContext() {
+    if (!audioCtx) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AudioContext();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+
+  function stopAllSounds() {
+    if (activeGainNode) {
+      activeGainNode.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+      setTimeout(() => {
+        try { if (activeNoiseNode) activeNoiseNode.stop(); } catch (e) {}
+        activeNoiseNode = null;
+        activeGainNode = null;
+      }, 350);
+    }
+    if (lofiInterval) {
+      clearInterval(lofiInterval);
+      lofiInterval = null;
+    }
+  }
+
+  function setAmbientSound(type) {
+    document.querySelectorAll('.sound-btn').forEach(btn => btn.classList.remove('active'));
+    stopAllSounds();
+
+    const badge = document.getElementById('soundStatusBadge');
+
+    if (type === 'off') {
+      document.getElementById('sndOff').classList.add('active');
+      badge.innerText = 'Off';
+      badge.className = 'badge bg-secondary-subtle text-secondary small';
+      return;
+    }
+
+    initAudioContext();
+
+    if (type === 'rain') {
+      document.getElementById('sndRain').classList.add('active');
+      badge.innerText = '🌧️ Rain';
+      badge.className = 'badge bg-primary-subtle text-primary small';
+      playRainSound();
+    } else if (type === 'white') {
+      document.getElementById('sndWhite').classList.add('active');
+      badge.innerText = '📻 White Noise';
+      badge.className = 'badge bg-info-subtle text-info small';
+      playWhiteNoise();
+    } else if (type === 'lofi') {
+      document.getElementById('sndLofi').classList.add('active');
+      badge.innerText = '☕ Lofi Chimes';
+      badge.className = 'badge bg-warning-subtle text-dark small';
+      playLofiSound();
+    }
+  }
+
+  function playWhiteNoise() {
+    const bufferSize = 2 * audioCtx.sampleRate;
+    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+    const whiteNoise = audioCtx.createBufferSource();
+    whiteNoise.buffer = noiseBuffer;
+    whiteNoise.loop = true;
+
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+
+    whiteNoise.connect(gain);
+    gain.connect(audioCtx.destination);
+    whiteNoise.start();
+
+    activeNoiseNode = whiteNoise;
+    activeGainNode = gain;
+  }
+
+  function playRainSound() {
+    const bufferSize = 2 * audioCtx.sampleRate;
+    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = (Math.random() * 2 - 1) * 0.7;
+    }
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = noiseBuffer;
+    noise.loop = true;
+
+    // Filter to sound like rain drops
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(900, audioCtx.currentTime);
+
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+    noise.start();
+
+    activeNoiseNode = noise;
+    activeGainNode = gain;
+  }
+
+  function playLofiSound() {
+    // Gentle recurring warm tones
+    const notes = [261.63, 329.63, 392.00, 523.25, 440.00];
+    function chime() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      const freq = notes[Math.floor(Math.random() * notes.length)];
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 2.5);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 2.5);
+    }
+    chime();
+    lofiInterval = setInterval(chime, 3000);
+  }
+</script>
 {% endblock %}
