@@ -25,6 +25,12 @@ class User(db.Model):
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
+    # Gamification, Points & Streaks
+    streak_count = db.Column(db.Integer, default=1, nullable=False)
+    last_active_date = db.Column(db.Date, nullable=True)
+    total_points = db.Column(db.Integer, default=50, nullable=False)
+    badges = db.Column(db.Text, default='["Novice Scholar"]', nullable=False)
+
     # Relationships to user-owned entities (cascading deletes for data hygiene)
     subjects = db.relationship("Subject", backref="user", lazy=True, cascade="all, delete-orphan")
     tasks = db.relationship("StudyTask", backref="user", lazy=True, cascade="all, delete-orphan")
@@ -47,6 +53,42 @@ class User(db.Model):
     def is_admin(self) -> bool:
         """Check whether the current user has administrative privileges."""
         return self.role == "admin"
+
+    def get_badges_list(self) -> list:
+        """Return list of earned achievement badges."""
+        import json
+        try:
+            return json.loads(self.badges) if self.badges else ["Novice Scholar"]
+        except Exception:
+            return ["Novice Scholar"]
+
+    def add_badge(self, badge_name: str) -> bool:
+        """Award a new badge if not already unlocked."""
+        import json
+        b_list = self.get_badges_list()
+        if badge_name not in b_list:
+            b_list.append(badge_name)
+            self.badges = json.dumps(b_list)
+            return True
+        return False
+
+    def update_streak(self) -> int:
+        """Update daily study streak calculation and award bonus points."""
+        from datetime import date, timedelta
+        today = date.today()
+        if not self.last_active_date:
+            self.streak_count = 1
+            self.last_active_date = today
+        elif self.last_active_date == today:
+            pass  # Already active today
+        elif self.last_active_date == today - timedelta(days=1):
+            self.streak_count += 1
+            self.last_active_date = today
+            self.total_points += 15  # Daily streak bonus!
+        else:
+            self.streak_count = 1
+            self.last_active_date = today
+        return self.streak_count
 
     def __repr__(self) -> str:
         return f"<User id={self.id} username='{self.username}' role='{self.role}'>"

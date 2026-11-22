@@ -13,6 +13,9 @@ from app.models.assignment import Assignment
 from app.models.notification import Notification
 from app.models.study_session import StudySession
 from app.models.activity_log import ActivityLog
+from app.models.flashcard import FlashcardDeck, Flashcard
+from app.models.creative_question import CreativeQuestion
+from app.models.exam_goal import ExamGoal
 
 __all__ = [
     "User",
@@ -27,4 +30,8 @@ __all__ = [
     "Notification",
     "StudySession",
     "ActivityLog",
+    "FlashcardDeck",
+    "Flashcard",
+    "CreativeQuestion",
+    "ExamGoal",
 ]

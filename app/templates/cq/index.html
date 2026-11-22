@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Creative Questions (CQ) - EduSmart AI{% endblock %}
+{% block page_title %}Board Creative Questions (সৃজনশীল প্রশ্ন){% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-5">
+  <!-- Generate CQ Form -->
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm p-4 sticky-top" style="top: 80px; z-index: 10;">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <div class="stat-icon-box bg-primary-subtle text-primary rounded-circle" style="width: 40px; height: 40px;">
+          <i class="bi bi-file-earmark-text-fill"></i>
+        </div>
+        <div>
+          <h6 class="fw-bold mb-0">Generate Creative Question</h6>
+          <span class="badge bg-primary-subtle text-primary" style="font-size: 0.68rem;">NCTB / Board Exam Standard</span>
+        </div>
+      </div>
+      <p class="small text-muted mb-3">
+        Generate authentic 10-mark board-standard questions with a stimulus (উদ্দীপক) and 4 sub-questions (ক, খ, গ, ঘ) plus complete step-by-step model solutions.
+      </p>
+
+      <form method="POST" action="{{ url_for('cq.generate') }}" id="cqGenForm">
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Class / Academic Level</label>
+          <select name="class_level" id="cqClassSelect" class="form-select">
+            <option value="Class 6">Class 6 (Grade 6)</option>
+            <option value="Class 7">Class 7 (Grade 7)</option>
+            <option value="Class 8">Class 8 (Grade 8 / JSC)</option>
+            <option value="Class 9">Class 9 (SSC 9th Grade)</option>
+            <option value="Class 10" selected>Class 10 (SSC 10th Grade)</option>
+            <option value="Class 11">Class 11 (HSC 1st Year)</option>
+            <option value="Class 12">Class 12 (HSC 2nd Year)</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Subject</label>
+          <select name="curriculum_subject" id="cqSubjectSelect" class="form-select">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label small fw-semibold">Chapter / Topic</label>
+          <input type="text" name="topic" id="cqTopicInput" class="form-control" placeholder="e.g. গতি ও বল, পর্যায় সারণি, or কোষ বিভাজন" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold" id="cqGenBtn">
+          <i class="bi bi-magic me-2"></i>Generate Creative Question
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Available CQ List -->
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm p-4 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h5 class="fw-bold mb-0"><i class="bi bi-journal-text me-2 text-primary"></i>Question Bank</h5>
+        <span class="badge bg-primary rounded-pill px-3 py-2" id="cqCountBadge">{{ cqs|length }} Questions</span>
+      </div>
+
+      <!-- Class Filters -->
+      <div class="mb-3 pb-2 border-bottom">
+        <div class="d-flex flex-wrap gap-1" id="cqFilterTabs">
+          <button type="button" class="btn btn-sm btn-primary active cq-filter-btn" data-class="all">All ({{ cqs|length }})</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary cq-filter-btn" data-class="Class 6">Class 6</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary cq-filter-btn" data-class="Class 7">Class 7</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary cq-filter-btn" data-class="Class 8">Class 8</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary cq-filter-btn" data-class="Class 9">Class 9 (SSC)</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary cq-filter-btn" data-class="Class 10">Class 10 (SSC)</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary cq-filter-btn" data-class="Class 11">Class 11 (HSC)</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary cq-filter-btn" data-class="Class 12">Class 12 (HSC)</button>
+        </div>
+      </div>
+
+      {% if cqs %}
+      <div class="d-flex flex-column gap-3" id="cqListContainer">
+        {% for cq in cqs %}
+        <div class="p-3 rounded border bg-light cq-item" data-class="{{ cq.class_level }}">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                <span class="badge bg-primary-subtle text-primary" style="font-size: 0.68rem;">{{ cq.class_level }}</span>
+                <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.68rem;">{{ cq.subject_name }}</span>
+              </div>
+              <h6 class="fw-bold text-dark mb-1">{{ cq.chapter_topic }}</h6>
+            </div>
+            <div class="d-flex gap-2">
+              <a href="{{ url_for('cq.view_cq', cq_id=cq.id) }}" class="btn btn-primary btn-sm px-3">
+                <i class="bi bi-eye me-1"></i>Practice CQ
+              </a>
+              <form method="POST" action="{{ url_for('cq.delete_cq', cq_id=cq.id) }}" onsubmit="return confirm('Delete this question?');">
+                <button type="submit" class="btn btn-outline-danger btn-sm p-1 border-0">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+          <p class="small text-muted mb-0 text-truncate" style="max-width: 500px;">
+            <strong>উদ্দীপক:</strong> {{ cq.stimulus }}
+          </p>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-file-earmark-text fs-1 d-block mb-2"></i>
+        <h6>No Creative Questions Yet</h6>
+        <p class="small">Generate your first authentic board creative question on the left.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const curriculumData = {{ curriculum|tojson }};
+  const classSelect = document.getElementById('cqClassSelect');
+  const subjectSelect = document.getElementById('cqSubjectSelect');
+
+  function updateCQSubjects() {
+    const selectedClass = classSelect.value;
+    subjectSelect.innerHTML = '';
+
+    if (curriculumData[selectedClass]) {
+      curriculumData[selectedClass].subjects.forEach((subj, idx) => {
+        const opt = document.createElement('option');
+        opt.value = subj;
+        opt.textContent = subj;
+        if (idx === 0) opt.selected = true;
+        subjectSelect.appendChild(opt);
+      });
+    }
+  }
+
+  classSelect.addEventListener('change', updateCQSubjects);
+  updateCQSubjects();
+
+  const form = document.getElementById('cqGenForm');
+  const btn = document.getElementById('cqGenBtn');
+  if (form && btn) {
+    form.addEventListener('submit', function() {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating Board CQ...';
+    });
+  }
+
+  // Filter tabs
+  const filterBtns = document.querySelectorAll('.cq-filter-btn');
+  const items = document.querySelectorAll('.cq-item');
+  filterBtns.forEach(b => {
+    b.addEventListener('click', function() {
+      filterBtns.forEach(btn => {
+        btn.classList.remove('btn-primary', 'active');
+        btn.classList.add('btn-outline-secondary');
+      });
+      this.classList.remove('btn-outline-secondary');
+      this.classList.add('btn-primary', 'active');
+
+      const cl = this.getAttribute('data-class');
+      items.forEach(item => {
+        if (cl === 'all' || item.getAttribute('data-class') === cl) {
+          item.classList.remove('d-none');
+        } else {
+          item.classList.add('d-none');
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

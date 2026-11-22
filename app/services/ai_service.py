@@ -437,3 +437,170 @@ Format:
             "is_fallback": True,
             "error": None,
         }
+
+    # =========================================================================
+    # AI Flashcard Generation
+    # =========================================================================
+    @classmethod
+    def generate_flashcards(
+        cls, subject_name: str, topic: str, count: int = 6, class_level: str = "Class 10"
+    ) -> dict:
+        """Generate high-yield active recall flashcards using Gemini AI with offline fallback."""
+        count = max(4, min(count, 12))
+        if cls.is_configured():
+            prompt = f"""
+You are an expert educator creating study flashcards for {class_level} students.
+Subject: {subject_name}
+Topic / Chapter: {topic}
+Number of flashcards: {count}
+
+Generate exactly {count} active recall flashcards in strict JSON format.
+Each card must test a core concept, definition, formula, or key question.
+Return ONLY a valid JSON array of objects without markdown fences or extra commentary.
+
+Format:
+[
+  {{
+    "front": "Question or core concept prompt",
+    "back": "Clear, concise answer or definition (2-3 sentences max)",
+    "hint": "Brief memory trigger (optional)"
+  }}
+]
+"""
+            success, raw_text, error = cls._call_gemini_rest(prompt, timeout=20)
+            if success:
+                cleaned = re.sub(r"^```(?:json)?\s*", "", raw_text, flags=re.MULTILINE)
+                cleaned = re.sub(r"\s*```$", "", cleaned, flags=re.MULTILINE).strip()
+                try:
+                    parsed = json.loads(cleaned)
+                except Exception:
+                    match = re.search(r"\[\s*\{.*\}\s*\]", raw_text, re.DOTALL)
+                    parsed = json.loads(match.group(0)) if match else None
+
+                if isinstance(parsed, list) and len(parsed) > 0:
+                    cards = []
+                    for item in parsed:
+                        if "front" in item and "back" in item:
+                            cards.append({
+                                "front": str(item["front"]).strip(),
+                                "back": str(item["back"]).strip(),
+                                "hint": str(item.get("hint", "")).strip(),
+                            })
+                    if cards:
+                        return {"success": True, "cards": cards, "is_fallback": False}
+
+        # Offline Fallback Flashcards
+        offline_cards = [
+            {"front": f"What is the core definition of {topic}?", "back": f"{topic} is a fundamental concept in {subject_name} covering principles, laws, and practical applications.", "hint": "Key definition"},
+            {"front": f"State the primary formula or rule used in {topic}.", "back": "Review the governing relation between key variables and understand its physical meaning.", "hint": "Formula & unit"},
+            {"front": f"Give one real-world or exam application of {topic}.", "back": "Used extensively to solve numerical problems and explain natural phenomena.", "hint": "Application"},
+            {"front": f"What is a common student misconception regarding {topic}?", "back": "Confusing fundamental units with derived quantities or confusing scalar and vector components.", "hint": "Exam trap"},
+            {"front": "What are the SI units associated with this concept?", "back": "Always ensure units are converted to standard SI units (meters, seconds, kilograms, Joules, Newtons) before calculating.", "hint": "SI Units"},
+            {"front": "How does this topic connect to Board / Final Exams?", "back": "Frequently tested in both Knowledge (ক) and Analytical (গ/ঘ) sections with high mark weightage.", "hint": "Exam tips"},
+        ]
+        return {"success": True, "cards": offline_cards[:count], "is_fallback": True}
+
+    # =========================================================================
+    # AI Note Summarizer
+    # =========================================================================
+    @classmethod
+    def summarize_note(cls, note_title: str, note_content: str) -> dict:
+        """Analyze study notes or text and extract high-yield exam takeaways."""
+        if cls.is_configured():
+            prompt = f"""
+You are an expert academic tutor. Summarize and extract high-yield revision material from this student note:
+Title: {note_title}
+Content:
+{note_content[:3000]}
+
+Provide a structured, beautifully formatted Markdown revision sheet with:
+1. 📌 **Executive Summary** (2-3 crisp sentences)
+2. ⚡ **Key Takeaways & High-Yield Points** (bullet points)
+3. 🧠 **Important Formulas & Definitions**
+4. ❓ **3 Likely Exam Questions with Answers**
+
+Keep it concise, direct, and directly actionable for exams.
+"""
+            success, raw_text, error = cls._call_gemini_rest(prompt, timeout=20)
+            if success:
+                return {"success": True, "summary": raw_text.strip(), "is_fallback": False}
+
+        # Offline Fallback Summary
+        fallback_summary = f"""### 📌 Summary of: {note_title}
+
+**Executive Overview:**
+This note outlines core academic principles, definitions, and relationships essential for thorough exam preparation.
+
+#### ⚡ High-Yield Key Points:
+- Thoroughly review primary definitions and governing formulas.
+- Pay attention to unit conversions and sign conventions.
+- Practice active recall by explaining each section in your own words.
+
+#### 🧠 Revision Checklist:
+- [ ] Memorize key definitions
+- [ ] Practice 2-3 standard numerical problems
+- [ ] Review common board exam questions on this topic
+"""
+        return {"success": True, "summary": fallback_summary, "is_fallback": True}
+
+    # =========================================================================
+    # AI Creative Question (CQ / সৃজনশীল) Generator
+    # =========================================================================
+    @classmethod
+    def generate_creative_question(
+        cls, subject_name: str, topic: str, class_level: str = "Class 10"
+    ) -> dict:
+        """Generate an authentic Board/NCTB-style Creative Question (ক, খ, গ, ঘ) with model answers."""
+        if cls.is_configured():
+            prompt = f"""
+You are an experienced National Curriculum (NCTB) Board Exam question setter for {class_level}.
+Subject: {subject_name}
+Topic / Chapter: {topic}
+
+Create an authentic, high-quality Creative Question (সৃজনশীল প্রশ্ন / CQ) in Bengali (or English if English subject) following the standard board exam pattern:
+1. Stimulus (উদ্দীপক): A realistic scenario, data table, or experiment (3-5 sentences).
+2. Question (ক) - জ্ঞানমূলক (1 mark): Direct textbook definition question.
+3. Question (খ) - অনুধাবনমূলক (2 marks): Conceptual explanation question.
+4. Question (গ) - প্রয়োগমূলক (3 marks): Mathematical calculation or stimulus-applied problem.
+5. Question (ঘ) - উচ্চতর দক্ষতামূলক (4 marks): Higher-order analytical / evaluation question.
+6. Provide complete model answers for all 4 sub-questions!
+
+Return ONLY a strict JSON object with this exact structure:
+{{
+  "stimulus": "উদ্দীপকের বিস্তারিত বিবরণ...",
+  "question_a": "ক. জ্ঞানমূলক প্রশ্ন?",
+  "answer_a": "ক এর সঠিক পূর্ণাঙ্গ উত্তর...",
+  "question_b": "খ. অনুধাবনমূলক প্রশ্ন?",
+  "answer_b": "খ এর বিস্তারিত বিশ্লেষণ ও কারণ...",
+  "question_c": "গ. প্রয়োগমূলক প্রশ্ন (উদ্দীপক ভিত্তিক)?",
+  "answer_c": "গ এর গাণিতিক সমাধান ও ব্যাখ্যা...",
+  "question_d": "ঘ. উচ্চতর দক্ষতামূলক প্রশ্ন?",
+  "answer_d": "ঘ এর তুলনামূলক মূল্যায়ন ও সিদ্ধান্ত..."
+}}
+"""
+            success, raw_text, error = cls._call_gemini_rest(prompt, timeout=25)
+            if success:
+                cleaned = re.sub(r"^```(?:json)?\s*", "", raw_text, flags=re.MULTILINE)
+                cleaned = re.sub(r"\s*```$", "", cleaned, flags=re.MULTILINE).strip()
+                try:
+                    parsed = json.loads(cleaned)
+                except Exception:
+                    match = re.search(r"\{.*\}", raw_text, re.DOTALL)
+                    parsed = json.loads(match.group(0)) if match else None
+
+                if isinstance(parsed, dict) and "stimulus" in parsed and "question_a" in parsed:
+                    return {"success": True, "cq": parsed, "is_fallback": False}
+
+        # Curated Offline Fallback CQ
+        offline_cq = {
+            "stimulus": f"{class_level} এর {subject_name} ক্লাসে শিক্ষক {topic} নিয়ে একটি বাস্তব পরীক্ষণ প্রদর্শন করলেন। তিনি শিক্ষার্থীদের একটি বস্তু ও তার বিভিন্ন অবস্থার পরিবর্তন পর্যবেক্ষণ করতে বললেন এবং প্রয়োজনীয় পরিমাপ রেকর্ড করলেন।",
+            "question_a": f"ক. {topic} এর মৌলিক একক বা সংজ্ঞা কী? (১)",
+            "answer_a": f"পাঠ্যবই অনুযায়ী {topic} হলো একটি ভৌত বা গাণিতিক ধারণা যা নির্দিষ্ট নিয়ম ও সূত্রের ওপর প্রতিষ্ঠিত।",
+            "question_b": "খ. বাস্তব ক্ষেত্রে এই নিয়মের প্রযোজ্যতা ব্যাখ্যা করো। (২)",
+            "answer_b": "দৈনন্দিন জীবনে এবং বিজ্ঞানের বিভিন্ন ক্ষেত্রে শক্তির সংরক্ষণ এবং ভৌত নিয়মের যথার্থতার কারণে এটি অত্যন্ত প্রাসঙ্গিক। উদ্দীপকের ঘটনার ক্ষেত্রেও এই বৈজ্ঞানিক নীতিটি সরাসরি জড়িত।",
+            "question_c": "গ. উদ্দীপকের তথ্যের আলোকে গাণিতিক বা পরীক্ষামূলক ফলাফল নিরূপণ করো। (৩)",
+            "answer_c": "প্রদত্ত সূত্রাবলী ব্যবহার করে প্রাপ্ত মানগুলো সাজিয়ে দেখা যায় যে, পরীক্ষামূলক মান ও তাত্ত্বিক মানের মধ্যে পূর্ণ সামঞ্জস্য রয়েছে।",
+            "question_d": "ঘ. 'বিজ্ঞান ও প্রযুক্তির উৎকর্ষে এই বিষয়ের ভূমিকা অনস্বীকার্য'—উক্তিটি মূল্যায়ন করো। (৪)",
+            "answer_d": "যেকোনো তাত্ত্বিক আবিষ্কারের ব্যবহারিক রূপায়ন নির্ভর করে মৌলিক বিজ্ঞানের সঠিক প্রয়োগের ওপর। আধুনিক তথ্যপ্রযুক্তি ও গবেষণায় এটি অন্যতম ভিত্তিপ্রস্তর হিসেবে ভূমিকা রাখছে।",
+        }
+        return {"success": True, "cq": offline_cq, "is_fallback": True}

@@ -201,3 +201,20 @@ def download_file(file_id):
         as_attachment=True,
         download_name=file_record.filename,
     )
+
+
+@notes_bp.route("/<int:note_id>/summarize", methods=["POST"])
+@login_required
+def summarize(note_id):
+    """Summarize note with AI and return high-yield exam takeaways."""
+    from flask import jsonify
+    from app.services.ai_service import AIService
+    user = get_current_user()
+    note = Note.query.filter_by(id=note_id, user_id=user.id).first_or_404()
+
+    result = AIService.summarize_note(note.title, note.content)
+    if result.get("success"):
+        user.total_points += 10
+        user.add_badge("Smart Note Taker")
+        db.session.commit()
+    return jsonify(result)

@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Study: {{ deck.title }} - EduSmart AI{% endblock %}
+{% block page_title %}{{ deck.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <!-- Top Action / Progress Bar -->
+    <div class="card border-0 shadow-sm p-3 mb-4">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <a href="{{ url_for('flashcards.index') }}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-arrow-left me-1"></i>Back to Decks
+        </a>
+        <div class="d-flex align-items-center gap-3">
+          <span class="small fw-semibold text-muted">
+            Card <span id="currentCardIndex">1</span> of {{ deck.cards|length }}
+          </span>
+          <span class="badge bg-success" id="deckMasteredBadge">
+            {{ deck.mastered_count() }} / {{ deck.cards|length }} Mastered
+          </span>
+        </div>
+      </div>
+      <div class="progress mt-2" style="height: 6px;">
+        <div class="progress-bar bg-primary" id="studyProgressBar" style="width: {{ deck.progress_percentage() }}%;"></div>
+      </div>
+    </div>
+
+    <!-- 3D Flashcard Viewer Area -->
+    <div class="flashcard-scene mb-4" onclick="flipCard()">
+      <div class="flashcard-inner" id="flashcardBox">
+        <!-- Front Face -->
+        <div class="flashcard-face flashcard-front">
+          <span class="badge bg-primary-subtle text-primary mb-3 px-3 py-1 text-uppercase" style="font-size: 0.72rem;">
+            Question / Prompt (Click to Flip)
+          </span>
+          <h4 class="fw-bold mb-3 text-dark px-3" id="cardQuestionText"></h4>
+          <p class="text-muted small mb-0 fst-italic" id="cardHintText"></p>
+          <div class="mt-auto small text-muted opacity-75">
+            <i class="bi bi-arrow-repeat me-1"></i>Tap or press Space to reveal answer
+          </div>
+        </div>
+
+        <!-- Back Face -->
+        <div class="flashcard-face flashcard-back">
+          <span class="badge bg-white text-primary mb-3 px-3 py-1 text-uppercase fw-bold" style="font-size: 0.72rem;">
+            Answer / Key Concept
+          </span>
+          <h5 class="fw-semibold mb-3 px-3 lh-base" id="cardAnswerText"></h5>
+          <div class="mt-auto small opacity-75">
+            <i class="bi bi-arrow-repeat me-1"></i>Tap to flip back
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls & Action Toolbar -->
+    <div class="card border-0 shadow-sm p-3 d-flex flex-row justify-content-between align-items-center flex-wrap gap-2">
+      <button class="btn btn-outline-primary px-3" onclick="prevCard()" id="prevBtn">
+        <i class="bi bi-chevron-left me-1"></i>Previous
+      </button>
+
+      <button class="btn btn-outline-success px-4 fw-semibold" id="masterBtn" onclick="toggleMastery()">
+        <i class="bi bi-check2-circle me-1"></i><span id="masterBtnText">Mark Mastered (+5 pts)</span>
+      </button>
+
+      <button class="btn btn-primary px-3" onclick="nextCard()" id="nextBtn">
+        Next<i class="bi bi-chevron-right ms-1"></i>
+      </button>
+    </div>
+
+    <div class="text-center mt-3 text-muted small">
+      <kbd>Space</kbd> Flip card &bull; <kbd>&larr;</kbd> Previous &bull; <kbd>&rarr;</kbd> Next
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const cardsData = [
+    {% for c in deck.cards %}
+    {
+      id: {{ c.id }},
+      front: {{ c.front_question|tojson }},
+      back: {{ c.back_answer|tojson }},
+      hint: {{ (c.hint or '')|tojson }},
+      is_mastered: {{ 'true' if c.is_mastered else 'false' }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  let currentIndex = 0;
+  const flashcardBox = document.getElementById('flashcardBox');
+  const qText = document.getElementById('cardQuestionText');
+  const aText = document.getElementById('cardAnswerText');
+  const hText = document.getElementById('cardHintText');
+  const currentIndexEl = document.getElementById('currentCardIndex');
+  const masterBtn = document.getElementById('masterBtn');
+  const masterBtnText = document.getElementById('masterBtnText');
+  const masteredBadge = document.getElementById('deckMasteredBadge');
+  const progressBar = document.getElementById('studyProgressBar');
+
+  function renderCurrentCard() {
+    if (!cardsData.length) return;
+    const card = cardsData[currentIndex];
+
+    // Reset flip state
+    flashcardBox.classList.remove('is-flipped');
+
+    qText.textContent = card.front;
+    aText.textContent = card.back;
+    hText.textContent = card.hint ? `Hint: ${card.hint}` : '';
+    currentIndexEl.textContent = currentIndex + 1;
+
+    // Update master button
+    if (card.is_mastered) {
+      masterBtn.className = 'btn btn-success px-4 fw-semibold';
+      masterBtnText.textContent = 'Mastered ✓';
+    } else {
+      masterBtn.className = 'btn btn-outline-success px-4 fw-semibold';
+      masterBtnText.textContent = 'Mark Mastered (+5 pts)';
+    }
+
+    // Toggle nav buttons
+    document.getElementById('prevBtn').disabled = (currentIndex === 0);
+    document.getElementById('nextBtn').disabled = (currentIndex === cardsData.length - 1);
+  }
+
+  function flipCard() {
+    flashcardBox.classList.toggle('is-flipped');
+  }
+
+  function nextCard() {
+    if (currentIndex < cardsData.length - 1) {
+      currentIndex++;
+      renderCurrentCard();
+    }
+  }
+
+  function prevCard() {
+    if (currentIndex > 0) {
+      currentIndex--;
+      renderCurrentCard();
+    }
+  }
+
+  async function toggleMastery() {
+    const card = cardsData[currentIndex];
+    try {
+      const res = await fetch(`/flashcards/card/${card.id}/toggle`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        card.is_mastered = data.is_mastered;
+        renderCurrentCard();
+        masteredBadge.textContent = `${data.deck_mastered} / ${data.deck_total} Mastered`;
+        progressBar.style.width = `${data.deck_percentage}%`;
+      }
+    } catch (e) {
+      console.error('Mastery toggle error:', e);
+    }
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', function(e) {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      flipCard();
+    } else if (e.code === 'ArrowRight') {
+      nextCard();
+    } else if (e.code === 'ArrowLeft') {
+      prevCard();
+    }
+  });
+
+  // Initial render
+  renderCurrentCard();
+</script>
+{% endblock %}

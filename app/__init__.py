@@ -65,6 +65,8 @@ def create_app(config_name: str = "default") -> Flask:
     from app.routes.assistant import assistant_bp
     from app.routes.assignments import assignments_bp
     from app.routes.admin import admin_bp
+    from app.routes.flashcards import flashcards_bp
+    from app.routes.cq import cq_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -74,6 +76,8 @@ def create_app(config_name: str = "default") -> Flask:
     app.register_blueprint(assistant_bp)
     app.register_blueprint(assignments_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(flashcards_bp)
+    app.register_blueprint(cq_bp)
 
     # Error Handlers
     @app.errorhandler(403)
@@ -102,11 +106,23 @@ def _auto_init_database(app: Flask):
         try:
             db.create_all()
 
-            # Ensure class_level column exists in quizzes and subjects for SQLite
+            # Ensure class_level and gamification columns exist for SQLite
             from sqlalchemy import text
             for table_name in ["quizzes", "subjects"]:
                 try:
                     db.session.execute(text(f"ALTER TABLE {table_name} ADD COLUMN class_level VARCHAR(50) DEFAULT 'General'"))
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
+
+            for col_sql in [
+                "ALTER TABLE users ADD COLUMN streak_count INTEGER DEFAULT 1",
+                "ALTER TABLE users ADD COLUMN last_active_date DATE",
+                "ALTER TABLE users ADD COLUMN total_points INTEGER DEFAULT 50",
+                "ALTER TABLE users ADD COLUMN badges TEXT DEFAULT '[\"Novice Scholar\"]'",
+            ]:
+                try:
+                    db.session.execute(text(col_sql))
                     db.session.commit()
                 except Exception:
                     db.session.rollback()

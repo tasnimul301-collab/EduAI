@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Academic Leaderboard & Achievements - EduSmart AI{% endblock %}
+{% block page_title %}Academic Leaderboard{% endblock %}
+
+{% block content %}
+<!-- Current User Rank Banner -->
+<div class="card border-0 shadow-sm p-4 mb-4 bg-gradient-primary text-white" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div class="d-flex align-items-center gap-3">
+      <div class="rounded-circle bg-white text-primary d-flex align-items-center justify-content-center fw-bold fs-3 shadow" style="width: 60px; height: 60px;">
+        {{ user.username[:2].upper() }}
+      </div>
+      <div>
+        <h4 class="fw-bold mb-1">{{ user.full_name or user.username }}</h4>
+        <div class="opacity-75 small">
+          Academic Scholar &bull; {{ user.role.title() }}
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-4 text-center">
+      <div>
+        <div class="fs-4 fw-extrabold text-warning">⚡ {{ user.total_points }}</div>
+        <div class="small opacity-75">Academic Points</div>
+      </div>
+      <div>
+        <div class="fs-4 fw-extrabold text-white">🔥 {{ user.streak_count }}d</div>
+        <div class="small opacity-75">Active Streak</div>
+      </div>
+      <div>
+        <div class="fs-4 fw-extrabold text-white">🏆 {{ user.get_badges_list()|length }}</div>
+        <div class="small opacity-75">Badges Unlocked</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Top 3 Podium (if at least 1 student) -->
+{% if top_students %}
+<div class="row g-3 mb-4 justify-content-center align-items-end">
+  <!-- 2nd Place -->
+  {% if top_students|length > 1 %}
+  <div class="col-md-4 col-sm-6 order-2 order-md-1">
+    <div class="card border-0 shadow-sm text-center p-3 h-100" style="background: #f8fafc; border-top: 4px solid #94a3b8 !important;">
+      <div class="fs-1 mb-1">🥈</div>
+      <div class="badge bg-secondary-subtle text-secondary px-3 py-1 rounded-pill mb-2">2nd Place</div>
+      <h6 class="fw-bold mb-1 text-dark">{{ top_students[1].full_name or top_students[1].username }}</h6>
+      <div class="text-primary fw-bold fs-5 mb-1">⚡ {{ top_students[1].total_points }} pts</div>
+      <div class="small text-muted mb-2">🔥 {{ top_students[1].streak_count }} day streak</div>
+      <div class="d-flex flex-wrap justify-content-center gap-1">
+        {% for b in top_students[1].get_badges_list()[:2] %}
+        <span class="badge bg-light text-dark border small">{{ b }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- 1st Place (Winner) -->
+  <div class="col-md-4 col-sm-6 order-1 order-md-2">
+    <div class="card border-0 shadow-lg text-center p-4 h-100 position-relative" style="background: #ffffff; border-top: 5px solid #f59e0b !important; transform: translateY(-8px);">
+      <div class="position-absolute top-0 start-50 translate-middle badge bg-warning text-dark px-3 py-1 shadow-sm fw-bold">
+        🌟 TOP SCHOLAR
+      </div>
+      <div class="fs-1 mb-1 mt-2">🥇</div>
+      <div class="badge bg-warning-subtle text-warning px-3 py-1 rounded-pill mb-2 fw-bold">1st Place Champion</div>
+      <h5 class="fw-bold mb-1 text-dark">{{ top_students[0].full_name or top_students[0].username }}</h5>
+      <div class="text-primary fw-extrabold fs-4 mb-1">⚡ {{ top_students[0].total_points }} pts</div>
+      <div class="small text-muted mb-2">🔥 {{ top_students[0].streak_count }} day streak</div>
+      <div class="d-flex flex-wrap justify-content-center gap-1">
+        {% for b in top_students[0].get_badges_list()[:3] %}
+        <span class="badge bg-warning-subtle text-dark border border-warning small">{{ b }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- 3rd Place -->
+  {% if top_students|length > 2 %}
+  <div class="col-md-4 col-sm-6 order-3 order-md-3">
+    <div class="card border-0 shadow-sm text-center p-3 h-100" style="background: #f8fafc; border-top: 4px solid #d97706 !important;">
+      <div class="fs-1 mb-1">🥉</div>
+      <div class="badge bg-warning-subtle text-dark px-3 py-1 rounded-pill mb-2">3rd Place</div>
+      <h6 class="fw-bold mb-1 text-dark">{{ top_students[2].full_name or top_students[2].username }}</h6>
+      <div class="text-primary fw-bold fs-5 mb-1">⚡ {{ top_students[2].total_points }} pts</div>
+      <div class="small text-muted mb-2">🔥 {{ top_students[2].streak_count }} day streak</div>
+      <div class="d-flex flex-wrap justify-content-center gap-1">
+        {% for b in top_students[2].get_badges_list()[:2] %}
+        <span class="badge bg-light text-dark border small">{{ b }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- Full Leaderboard Table & Points Guide -->
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-trophy-fill text-warning me-2"></i>Global Rankings</h5>
+        <span class="badge bg-light text-muted border">Updated Live</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light small text-muted">
+            <tr>
+              <th scope="col" style="width: 70px;">Rank</th>
+              <th scope="col">Student</th>
+              <th scope="col" class="text-center">Daily Streak</th>
+              <th scope="col" class="text-center">Points</th>
+              <th scope="col">Badges Unlocked</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in top_students %}
+            <tr class="{% if s.id == user.id %}table-primary fw-semibold{% endif %}">
+              <td>
+                {% if loop.index == 1 %}
+                <span class="fs-5">🥇</span>
+                {% elif loop.index == 2 %}
+                <span class="fs-5">🥈</span>
+                {% elif loop.index == 3 %}
+                <span class="fs-5">🥉</span>
+                {% else %}
+                <span class="fw-bold text-muted ps-2">#{{ loop.index }}</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="rounded-circle bg-primary-subtle text-primary small d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px;">
+                    {{ s.username[:2].upper() }}
+                  </div>
+                  <div>
+                    <div class="text-dark">{{ s.full_name or s.username }}</div>
+                    {% if s.id == user.id %}
+                    <span class="badge bg-primary text-white" style="font-size: 0.65rem;">You</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </td>
+              <td class="text-center">
+                <span class="badge bg-danger-subtle text-danger px-2 py-1">
+                  🔥 {{ s.streak_count }}d
+                </span>
+              </td>
+              <td class="text-center fw-bold text-primary">
+                ⚡ {{ s.total_points }}
+              </td>
+              <td>
+                <div class="d-flex flex-wrap gap-1">
+                  {% set badges = s.get_badges_list() %}
+                  {% if badges %}
+                    {% for b in badges[:3] %}
+                    <span class="badge bg-light text-secondary border small">{{ b }}</span>
+                    {% endfor %}
+                    {% if badges|length > 3 %}
+                    <span class="badge bg-light text-muted small">+{{ badges|length - 3 }}</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="text-muted small">None yet</span>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- How to Earn Points & Badges Guide -->
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm p-4 mb-4">
+      <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-patch-question text-primary me-2"></i>How to Earn Academic Points</h6>
+      <ul class="list-unstyled d-flex flex-column gap-3 small mb-0">
+        <li class="d-flex align-items-start gap-2">
+          <span class="badge bg-success-subtle text-success p-1"><i class="bi bi-check-lg"></i></span>
+          <div>
+            <strong>Complete a Quiz:</strong> +10 pts per correct answer, +25 bonus for 80%+ score.
+          </div>
+        </li>
+        <li class="d-flex align-items-start gap-2">
+          <span class="badge bg-danger-subtle text-danger p-1"><i class="bi bi-fire"></i></span>
+          <div>
+            <strong>Daily Study Streak:</strong> Log in and study daily to keep your streak flame alive!
+          </div>
+        </li>
+        <li class="d-flex align-items-start gap-2">
+          <span class="badge bg-primary-subtle text-primary p-1"><i class="bi bi-card-text"></i></span>
+          <div>
+            <strong>Flashcards Mastery:</strong> +20 pts for creating or mastering AI revision decks.
+          </div>
+        </li>
+        <li class="d-flex align-items-start gap-2">
+          <span class="badge bg-warning-subtle text-warning p-1"><i class="bi bi-mortarboard"></i></span>
+          <div>
+            <strong>Creative Questions (CQ):</strong> +15 pts for practicing Board-standard CQs.
+          </div>
+        </li>
+        <li class="d-flex align-items-start gap-2">
+          <span class="badge bg-info-subtle text-info p-1"><i class="bi bi-bullseye"></i></span>
+          <div>
+            <strong>Set Exam Target:</strong> +15 pts for scheduling target milestones and study tasks.
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Your Unlocked Badges -->
+    <div class="card border-0 shadow-sm p-4">
+      <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-award-fill text-warning me-2"></i>Your Badge Showcase</h6>
+      {% set my_badges = user.get_badges_list() %}
+      {% if my_badges %}
+      <div class="d-flex flex-column gap-2">
+        {% for badge in my_badges %}
+        <div class="p-2 px-3 border rounded bg-light d-flex align-items-center gap-2">
+          <i class="bi bi-patch-check-fill text-warning fs-5"></i>
+          <div>
+            <div class="fw-semibold small text-dark">{{ badge }}</div>
+            <div class="text-muted" style="font-size: 0.75rem;">Achievement Unlocked</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-center py-3 text-muted small">
+        <i class="bi bi-award fs-2 text-secondary d-block mb-1"></i>
+        Complete quizzes and study tasks to unlock your first badge!
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

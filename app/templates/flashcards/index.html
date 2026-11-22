@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}AI Flashcards - EduSmart AI{% endblock %}
+{% block page_title %}AI Study Flashcards{% endblock %}
+
+{% block content %}
+<!-- Mastery & Points KPI Bar -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm p-3 d-flex flex-row align-items-center gap-3">
+      <div class="stat-icon-box bg-primary-subtle text-primary rounded-circle" style="width: 48px; height: 48px; font-size: 1.5rem;">
+        <i class="bi bi-stack"></i>
+      </div>
+      <div>
+        <h6 class="text-muted small mb-0">Total Flashcards</h6>
+        <h4 class="fw-bold mb-0 text-dark">{{ total_cards }} Cards</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm p-3 d-flex flex-row align-items-center gap-3">
+      <div class="stat-icon-box bg-success-subtle text-success rounded-circle" style="width: 48px; height: 48px; font-size: 1.5rem;">
+        <i class="bi bi-check2-circle"></i>
+      </div>
+      <div>
+        <h6 class="text-muted small mb-0">Mastered Concepts</h6>
+        <h4 class="fw-bold mb-0 text-dark">{{ total_mastered }} / {{ total_cards }}</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm p-3 d-flex flex-row align-items-center gap-3">
+      <div class="stat-icon-box bg-warning-subtle text-warning rounded-circle" style="width: 48px; height: 48px; font-size: 1.5rem;">
+        <i class="bi bi-trophy-fill"></i>
+      </div>
+      <div>
+        <h6 class="text-muted small mb-0">Mastery Rate</h6>
+        <h4 class="fw-bold mb-0 text-dark">{{ mastery_rate }}% Complete</h4>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-5">
+  <!-- Generate New Deck Form -->
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm p-4 sticky-top" style="top: 80px; z-index: 10;">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <div class="stat-icon-box bg-primary-subtle text-primary rounded-circle" style="width: 38px; height: 38px;">
+          <i class="bi bi-magic"></i>
+        </div>
+        <h6 class="fw-bold mb-0">Generate AI Flashcard Deck</h6>
+      </div>
+      <p class="small text-muted mb-3">
+        Generate active-recall question and answer cards for Class 6-12 chapters or university subjects.
+      </p>
+
+      <form method="POST" action="{{ url_for('flashcards.generate') }}" id="deckGenForm">
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Class / Academic Level</label>
+          <select name="class_level" id="fcClassSelect" class="form-select">
+            <option value="Class 6">Class 6 (Grade 6)</option>
+            <option value="Class 7">Class 7 (Grade 7)</option>
+            <option value="Class 8">Class 8 (Grade 8)</option>
+            <option value="Class 9">Class 9 (SSC)</option>
+            <option value="Class 10" selected>Class 10 (SSC)</option>
+            <option value="Class 11">Class 11 (HSC 1st Year)</option>
+            <option value="Class 12">Class 12 (HSC 2nd Year)</option>
+            <option value="University / General">University / General</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Subject</label>
+          <select name="curriculum_subject" id="fcSubjectSelect" class="form-select">
+            <!-- Populated dynamically via JS -->
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Topic / Chapter</label>
+          <input type="text" name="topic" id="fcTopicInput" class="form-control" placeholder="e.g. Newton's Laws, Periodic Table, or DNA" required>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label small fw-semibold">Card Count</label>
+          <select name="count" class="form-select">
+            <option value="4">4 Flashcards</option>
+            <option value="6" selected>6 Flashcards (Standard)</option>
+            <option value="10">10 Flashcards (Deep Dive)</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 fw-semibold" id="fcGenBtn">
+          <i class="bi bi-magic me-2"></i>Generate Flashcards
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Decks List Grid -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm p-4 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h5 class="fw-bold mb-0"><i class="bi bi-collection-play me-2 text-primary"></i>My Flashcard Decks</h5>
+        <span class="badge bg-primary rounded-pill px-3 py-2">{{ decks|length }} Decks</span>
+      </div>
+
+      {% if decks %}
+      <div class="row g-3">
+        {% for deck in decks %}
+        <div class="col-md-6">
+          <div class="card p-3 border-0 shadow-sm bg-light h-100 d-flex flex-column justify-content-between">
+            <div>
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="badge bg-primary-subtle text-primary" style="font-size: 0.68rem;">
+                  {{ deck.class_level or 'General' }}
+                </span>
+                <form method="POST" action="{{ url_for('flashcards.delete_deck', deck_id=deck.id) }}" onsubmit="return confirm('Delete this deck?');">
+                  <button type="submit" class="btn btn-outline-danger btn-sm p-0 border-0" title="Delete Deck">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+              <h6 class="fw-bold text-dark mb-1">{{ deck.title }}</h6>
+              <div class="small text-muted mb-3"><i class="bi bi-tag me-1"></i>{{ deck.topic }}</div>
+            </div>
+
+            <div>
+              <div class="d-flex justify-content-between align-items-center small text-muted mb-1">
+                <span>Mastered: {{ deck.mastered_count() }} / {{ deck.cards|length }}</span>
+                <span class="fw-bold text-primary">{{ deck.progress_percentage() }}%</span>
+              </div>
+              <div class="progress mb-3" style="height: 6px;">
+                <div class="progress-bar bg-success" style="width: {{ deck.progress_percentage() }}%;"></div>
+              </div>
+
+              <a href="{{ url_for('flashcards.study_deck', deck_id=deck.id) }}" class="btn btn-primary btn-sm w-100 fw-semibold">
+                <i class="bi bi-play-circle-fill me-1"></i>Study Deck ({{ deck.cards|length }} Cards)
+              </a>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-stack fs-1 d-block mb-2"></i>
+        <h6>No Flashcard Decks Yet</h6>
+        <p class="small">Use the AI Generator on the left to create your first active recall deck.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const curriculumData = {{ curriculum|tojson }};
+  const classSelect = document.getElementById('fcClassSelect');
+  const subjectSelect = document.getElementById('fcSubjectSelect');
+
+  function updateSubjects() {
+    const selectedClass = classSelect.value;
+    subjectSelect.innerHTML = '';
+
+    if (curriculumData[selectedClass]) {
+      curriculumData[selectedClass].subjects.forEach((subj, idx) => {
+        const opt = document.createElement('option');
+        opt.value = subj;
+        opt.textContent = subj;
+        if (idx === 0) opt.selected = true;
+        subjectSelect.appendChild(opt);
+      });
+    } else {
+      ['Computer Science', 'General Academic', 'Mathematics', 'Physics'].forEach((s, idx) => {
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = s;
+        if (idx === 0) opt.selected = true;
+        subjectSelect.appendChild(opt);
+      });
+    }
+  }
+
+  classSelect.addEventListener('change', updateSubjects);
+  updateSubjects();
+
+  const form = document.getElementById('deckGenForm');
+  const btn = document.getElementById('fcGenBtn');
+  if (form && btn) {
+    form.addEventListener('submit', function() {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating Flashcards...';
+    });
+  }
+</script>
+{% endblock %}

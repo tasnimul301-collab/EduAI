@@ -49,8 +49,13 @@ def index():
 @dashboard_bp.route("/dashboard")
 @login_required
 def dashboard():
-    """Primary student dashboard displaying KPIs, deadlines, and Chart.js analytics."""
+    """Primary student dashboard displaying KPIs, deadlines, streaks, and Chart.js analytics."""
     user = get_current_user()
+    user.update_streak()
+    db.session.commit()
+
+    from app.models.exam_goal import ExamGoal
+    exam_goal = ExamGoal.query.filter_by(user_id=user.id).order_by(ExamGoal.exam_date.asc()).first()
     metrics = AnalyticsService.get_student_dashboard_metrics(user.id)
     subjects = Subject.query.filter_by(user_id=user.id).all()
 
@@ -59,6 +64,30 @@ def dashboard():
         user=user,
         metrics=metrics,
         subjects=subjects,
+        exam_goal=exam_goal,
+    )
+
+
+@dashboard_bp.route("/leaderboard")
+@login_required
+def leaderboard():
+    """Display real-time student leaderboard, points, and achievement rankings."""
+    user = get_current_user()
+    user.update_streak()
+    db.session.commit()
+
+    from app.models.user import User
+    top_students = (
+        User.query.filter_by(role="student")
+        .order_by(User.total_points.desc(), User.streak_count.desc())
+        .limit(25)
+        .all()
+    )
+
+    return render_template(
+        "dashboard/leaderboard.html",
+        user=user,
+        top_students=top_students,
     )
 
 

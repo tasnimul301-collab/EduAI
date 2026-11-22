@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Certificate of Achievement - {{ user.full_name or user.username }} - EduSmart AI</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f1f5f9;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      margin: 0;
+      padding: 30px 15px;
+      color: #1e293b;
+    }
+    .cert-container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 45px 55px;
+      position: relative;
+      border: 12px solid #1e1b4b;
+      outline: 3px solid #d97706;
+      outline-offset: -8px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      border-radius: 4px;
+    }
+    .cert-corner {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border: 3px solid #d97706;
+    }
+    .corner-tl { top: 15px; left: 15px; border-right: none; border-bottom: none; }
+    .corner-tr { top: 15px; right: 15px; border-left: none; border-bottom: none; }
+    .corner-bl { bottom: 15px; left: 15px; border-right: none; border-top: none; }
+    .corner-br { bottom: 15px; right: 15px; border-left: none; border-top: none; }
+
+    .cert-title {
+      font-family: 'Cinzel', serif;
+      font-size: 2.3rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: #1e1b4b;
+      text-transform: uppercase;
+      margin-top: 15px;
+      margin-bottom: 5px;
+    }
+    .cert-subtitle {
+      font-family: 'Cinzel', serif;
+      font-size: 1.1rem;
+      letter-spacing: 4px;
+      color: #b45309;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .recipient-name {
+      font-family: 'Cinzel', serif;
+      font-size: 2.1rem;
+      font-weight: 700;
+      color: #4338ca;
+      border-bottom: 2px solid #cbd5e1;
+      display: inline-block;
+      padding: 0 40px 8px 40px;
+      margin: 20px 0 15px 0;
+    }
+    .cert-badge {
+      width: 85px;
+      height: 85px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 16px rgba(217, 119, 6, 0.35);
+      border: 4px double #ffffff;
+    }
+    @media print {
+      body {
+        background-color: #ffffff !important;
+        padding: 0 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .cert-container {
+        box-shadow: none !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        border-width: 10px !important;
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Action Bar (hidden in print) -->
+  <div class="no-print text-center mb-4">
+    <button class="btn btn-primary px-4 py-2 fw-semibold me-2 shadow-sm" onclick="window.print()">
+      <i class="bi bi-printer-fill me-2"></i>Print or Save as PDF
+    </button>
+    <a href="{{ url_for('quiz.index') }}" class="btn btn-outline-secondary px-4 py-2">
+      <i class="bi bi-arrow-left me-1"></i>Back to Quizzes
+    </a>
+  </div>
+
+  <!-- Certificate Box -->
+  <div class="cert-container text-center">
+    <!-- Corner Ornaments -->
+    <div class="cert-corner corner-tl"></div>
+    <div class="cert-corner corner-tr"></div>
+    <div class="cert-corner corner-bl"></div>
+    <div class="cert-corner corner-br"></div>
+
+    <!-- Header Logo & Seal -->
+    <div class="d-flex justify-content-center align-items-center gap-2 mb-2">
+      <i class="bi bi-mortarboard-fill text-primary fs-2"></i>
+      <span class="fs-4 fw-extrabold tracking-wide text-dark" style="letter-spacing: 1px;">EduSmart AI</span>
+    </div>
+
+    <div class="cert-subtitle">Certificate of Academic Achievement</div>
+    <div class="cert-title">Verified Completion</div>
+
+    <p class="text-muted mt-3 mb-1" style="font-size: 1.05rem;">
+      This official record confirms that
+    </p>
+
+    <!-- Student Name -->
+    <div class="recipient-name">
+      {{ user.full_name or user.username }}
+    </div>
+
+    <p class="text-secondary mx-auto mb-3" style="max-width: 650px; font-size: 1.05rem; line-height: 1.7;">
+      has demonstrated academic competence and successfully finished the rigorous evaluation on
+      <br>
+      <strong class="text-dark fs-5">{{ quiz.title }}</strong>
+      {% if quiz.subject %}
+      <span class="d-block text-muted small mt-1">Curriculum: <strong>{{ quiz.subject.name }}</strong> ({{ quiz.subject.code }})</span>
+      {% endif %}
+    </p>
+
+    <!-- Score & Achievement Metrics -->
+    <div class="d-flex justify-content-center align-items-center gap-4 my-4">
+      <div class="p-2 px-4 rounded bg-light border">
+        <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.75rem;">Score Achieved</div>
+        <div class="fs-5 fw-bold text-dark">{{ attempt.score }} / {{ attempt.total_questions }}</div>
+      </div>
+
+      <!-- Golden Seal -->
+      <div class="cert-badge">
+        <i class="bi bi-patch-check-fill fs-3"></i>
+        <span style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">Verified</span>
+      </div>
+
+      <div class="p-2 px-4 rounded bg-light border">
+        <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.75rem;">Percentage</div>
+        <div class="fs-5 fw-bold text-success">{{ attempt.percentage|round(1) }}%</div>
+      </div>
+    </div>
+
+    <!-- Signatures & Verification ID Footer -->
+    <div class="row pt-4 mt-4 border-top border-secondary-subtle align-items-end text-start">
+      <div class="col-4 text-center">
+        <div class="fw-bold text-dark" style="font-family: 'Cinzel', serif;">{{ attempt.created_at.strftime('%B %d, %Y') }}</div>
+        <div class="border-top border-dark pt-1 small text-muted">Issue Date</div>
+      </div>
+
+      <div class="col-4 text-center">
+        <div class="fw-semibold text-primary small">
+          <i class="bi bi-shield-lock-fill me-1"></i>EduSmart Automated Assessor
+        </div>
+        <div class="border-top border-dark pt-1 small text-muted">Assessment Authority</div>
+      </div>
+
+      <div class="col-4 text-center">
+        <div class="fw-bold text-dark small" style="letter-spacing: 0.5px;">EDUSMART-{{ attempt.id }}-{{ attempt.created_at.strftime('%Y%m%d') }}</div>
+        <div class="border-top border-dark pt-1 small text-muted">Certificate ID</div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

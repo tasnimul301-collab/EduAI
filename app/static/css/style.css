@@ -368,3 +368,148 @@ h1, h2, h3, h4, h5, h6 {
     margin-left: 0;
   }
 }
+
+/* ==========================================================================
+   Dark Mode Theme Overrides
+   ========================================================================== */
+[data-theme="dark"] {
+  --bg-main: #0B1120;
+  --card-bg: #1E293B;
+  --text-primary: #F8FAFC;
+  --text-muted: #94A3B8;
+  --border-color: #334155;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] .card,
+[data-theme="dark"] .app-sidebar,
+[data-theme="dark"] .app-topbar,
+[data-theme="dark"] .dropdown-menu,
+[data-theme="dark"] .modal-content,
+[data-theme="dark"] .offcanvas,
+[data-theme="dark"] .navbar {
+  background-color: #1E293B !important;
+  color: #F8FAFC !important;
+  border-color: #334155 !important;
+}
+
+[data-theme="dark"] .bg-light,
+[data-theme="dark"] .table-light,
+[data-theme="dark"] .list-group-item,
+[data-theme="dark"] .chat-input-box {
+  background-color: #0F172A !important;
+  color: #E2E8F0 !important;
+  border-color: #334155 !important;
+}
+
+[data-theme="dark"] .text-dark {
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select,
+[data-theme="dark"] .input-group-text {
+  background-color: #0F172A !important;
+  color: #F8FAFC !important;
+  border-color: #334155 !important;
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus {
+  background-color: #0F172A !important;
+  color: #F8FAFC !important;
+  border-color: #6366F1 !important;
+}
+
+/* ==========================================================================
+   3D Flashcard Flipping Animation
+   ========================================================================== */
+.flashcard-scene {
+  perspective: 1000px;
+  cursor: pointer;
+}
+.flashcard-inner {
+  position: relative;
+  width: 100%;
+  min-height: 320px;
+  text-align: center;
+  transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+  transform-style: preserve-3d;
+}
+.flashcard-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+.flashcard-face {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2.5rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 2px solid var(--border-color);
+}
+.flashcard-front {
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+.flashcard-back {
+  background: linear-gradient(135deg, #4338CA, #312E81);
+  color: #FFFFFF !important;
+  transform: rotateY(180deg);
+}
+.flashcard-back h5,
+.flashcard-back p,
+.flashcard-back span {
+  color: #FFFFFF !important;
+}
+
+/* ==========================================================================
+   Certificate of Achievement Styles
+   ========================================================================== */
+.certificate-frame {
+  background: #FFFFFF;
+  border: 12px double #D97706;
+  padding: 3.5rem 3rem;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  position: relative;
+}
+.certificate-seal {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #F59E0B, #B45309);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  box-shadow: 0 4px 10px rgba(180,83,9,0.4);
+}
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .certificate-frame, .certificate-frame * {
+    visibility: visible;
+  }
+  .certificate-frame {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

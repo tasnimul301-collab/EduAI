@@ -17,13 +17,24 @@
         {% else %}Keep Practicing!
         {% endif %}
       </h3>
-      <p class="text-muted small mb-3">You scored <strong>{{ score }}</strong> out of <strong>{{ total }}</strong> questions</p>
+      <p class="text-muted small mb-2">You scored <strong>{{ score }}</strong> out of <strong>{{ total }}</strong> questions</p>
+
+      <div class="mb-3">
+        <span class="badge bg-warning-subtle text-dark border border-warning px-3 py-2 rounded-pill small">
+          <i class="bi bi-lightning-charge-fill text-warning me-1"></i>+{{ score * 10 + (25 if percentage >= 80 else 10) }} Academic Points Awarded & Daily Streak Updated!
+        </span>
+      </div>
 
       <div class="d-inline-flex align-items-center justify-content-center mx-auto px-4 py-2 rounded-pill bg-light border mb-4">
         <span class="display-6 fw-extrabold text-{{ 'success' if percentage >= 70 else ('warning' if percentage >= 50 else 'danger') }}">{{ percentage }}%</span>
       </div>
 
-      <div class="d-flex justify-content-center gap-3">
+      <div class="d-flex flex-wrap justify-content-center gap-2">
+        {% if attempt %}
+        <a href="{{ url_for('quiz.certificate', attempt_id=attempt.id) }}" class="btn btn-warning btn-sm px-3 fw-bold text-dark shadow-sm" target="_blank">
+          <i class="bi bi-award-fill me-1 text-dark"></i>Download Certificate
+        </a>
+        {% endif %}
         <a href="{{ url_for('quiz.take', quiz_id=quiz.id) }}" class="btn btn-outline-primary btn-sm px-3">
           <i class="bi bi-arrow-counterclockwise me-1"></i>Retake Quiz
         </a>

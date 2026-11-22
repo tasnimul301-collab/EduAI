@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}সৃজনশীল প্রশ্ন - {{ cq.subject_name }} ({{ cq.class_level }}) - EduSmart AI{% endblock %}
+{% block page_title %}সৃজনশীল প্রশ্ন অনুশীলন (Creative Question){% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+    <!-- Top Action Bar -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+      <a href="{{ url_for('cq.index') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>সকল সৃজনশীল প্রশ্ন (Back to Bank)
+      </a>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary btn-sm" onclick="window.print()">
+          <i class="bi bi-printer me-1"></i>প্রিন্ট / PDF সংরক্ষণ
+        </button>
+        <form method="POST" action="{{ url_for('cq.delete_cq', cq_id=cq.id) }}" onsubmit="return confirm('এই সৃজনশীল প্রশ্নটি মুছে ফেলতে চান?');" class="d-inline">
+          <button type="submit" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-trash me-1"></i>মুছে ফেলুন
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- CQ Main Container Card -->
+    <div class="card border-0 shadow-sm p-4 mb-4 printable-cq">
+      <!-- Header Info -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center pb-3 border-bottom mb-4 gap-2">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge bg-primary px-3 py-1 rounded-pill">{{ cq.class_level }}</span>
+            <span class="badge bg-secondary-subtle text-secondary border px-3 py-1 rounded-pill">{{ cq.subject_name }}</span>
+            <span class="badge bg-info-subtle text-info border px-2 py-1 rounded-pill">NCTB Board Pattern</span>
+          </div>
+          <h4 class="fw-bold mb-0 text-dark">{{ cq.chapter_topic }}</h4>
+        </div>
+        <div class="text-end text-muted small">
+          <div><i class="bi bi-clock me-1"></i>{{ cq.created_at.strftime('%d %b, %Y') }}</div>
+          <div class="fw-semibold text-primary">পূর্ণমান: ১০</div>
+        </div>
+      </div>
+
+      <!-- Stimulus (উদ্দীপক) Box -->
+      <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="fw-bold text-primary mb-0">
+            <i class="bi bi-file-text-fill me-2"></i>উদ্দীপকটি মনোযোগ দিয়ে পড়ো এবং নিচের প্রশ্নগুলোর উত্তর দাও:
+          </h6>
+          <button class="btn btn-link btn-sm text-muted text-decoration-none p-0" onclick="copyStimulus()">
+            <i class="bi bi-clipboard me-1"></i>কপি করুন
+          </button>
+        </div>
+        <div class="p-3 bg-light rounded-3 border-start border-4 border-primary text-dark fs-6" id="stimulusText" style="line-height: 1.8; white-space: pre-wrap;">
+{{ cq.stimulus }}
+        </div>
+      </div>
+
+      <!-- Questions List (ক, খ, গ, ঘ) -->
+      <div class="d-flex flex-column gap-3 mb-4">
+        <!-- Question ক (জ্ঞানমূলক - 1 mark) -->
+        <div class="border rounded-3 p-3 bg-white">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="fw-bold text-dark fs-6">
+              {{ cq.question_a }}
+            </div>
+            <span class="badge bg-light text-secondary border ms-2">জ্ঞানমূলক &bull; ১ নম্বর</span>
+          </div>
+          <div class="mt-2">
+            <button class="btn btn-sm btn-outline-success" type="button" data-bs-toggle="collapse" data-bs-target="#ansA" aria-expanded="false">
+              <i class="bi bi-eye me-1"></i>নমুনা উত্তর দেখুন
+            </button>
+            <div class="collapse mt-2" id="ansA">
+              <div class="card card-body bg-light border-0 p-3 small text-dark" style="white-space: pre-wrap; line-height: 1.7;">
+                <div class="fw-semibold text-success mb-1"><i class="bi bi-check-circle me-1"></i>আদর্শ উত্তর (Model Answer):</div>
+{{ cq.answer_a }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Question খ (অনুধাবনমূলক - 2 marks) -->
+        <div class="border rounded-3 p-3 bg-white">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="fw-bold text-dark fs-6">
+              {{ cq.question_b }}
+            </div>
+            <span class="badge bg-light text-secondary border ms-2">অনুধাবনমূলক &bull; ২ নম্বর</span>
+          </div>
+          <div class="mt-2">
+            <button class="btn btn-sm btn-outline-success" type="button" data-bs-toggle="collapse" data-bs-target="#ansB" aria-expanded="false">
+              <i class="bi bi-eye me-1"></i>নমুনা উত্তর দেখুন
+            </button>
+            <div class="collapse mt-2" id="ansB">
+              <div class="card card-body bg-light border-0 p-3 small text-dark" style="white-space: pre-wrap; line-height: 1.7;">
+                <div class="fw-semibold text-success mb-1"><i class="bi bi-check-circle me-1"></i>আদর্শ উত্তর (Model Answer):</div>
+{{ cq.answer_b }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Question গ (প্রয়োগমূলক - 3 marks) -->
+        <div class="border rounded-3 p-3 bg-white">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="fw-bold text-dark fs-6">
+              {{ cq.question_c }}
+            </div>
+            <span class="badge bg-light text-secondary border ms-2">প্রয়োগমূলক &bull; ৩ নম্বর</span>
+          </div>
+          <div class="mt-2">
+            <button class="btn btn-sm btn-outline-success" type="button" data-bs-toggle="collapse" data-bs-target="#ansC" aria-expanded="false">
+              <i class="bi bi-eye me-1"></i>নমুনা উত্তর দেখুন
+            </button>
+            <div class="collapse mt-2" id="ansC">
+              <div class="card card-body bg-light border-0 p-3 small text-dark" style="white-space: pre-wrap; line-height: 1.7;">
+                <div class="fw-semibold text-success mb-1"><i class="bi bi-check-circle me-1"></i>আদর্শ উত্তর (Model Answer):</div>
+{{ cq.answer_c }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Question ঘ (উচ্চতর দক্ষতামূলক - 4 marks) -->
+        <div class="border rounded-3 p-3 bg-white">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="fw-bold text-dark fs-6">
+              {{ cq.question_d }}
+            </div>
+            <span class="badge bg-light text-secondary border ms-2">উচ্চতর দক্ষতা &bull; ৪ নম্বর</span>
+          </div>
+          <div class="mt-2">
+            <button class="btn btn-sm btn-outline-success" type="button" data-bs-toggle="collapse" data-bs-target="#ansD" aria-expanded="false">
+              <i class="bi bi-eye me-1"></i>নমুনা উত্তর দেখুন
+            </button>
+            <div class="collapse mt-2" id="ansD">
+              <div class="card card-body bg-light border-0 p-3 small text-dark" style="white-space: pre-wrap; line-height: 1.7;">
+                <div class="fw-semibold text-success mb-1"><i class="bi bi-check-circle me-1"></i>আদর্শ উত্তর (Model Answer):</div>
+{{ cq.answer_d }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action: Reveal All Answers -->
+      <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+        <button class="btn btn-outline-secondary btn-sm" onclick="toggleAllAnswers()">
+          <i class="bi bi-arrows-expand me-1"></i>সকল উত্তর একসাথে দেখুন / লুকান
+        </button>
+        <a href="{{ url_for('cq.index') }}" class="btn btn-primary btn-sm px-4">
+          <i class="bi bi-plus-circle me-1"></i>নতুন CQ তৈরি করুন
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  let allOpen = false;
+  function toggleAllAnswers() {
+    allOpen = !allOpen;
+    ['ansA', 'ansB', 'ansC', 'ansD'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        const bsCollapse = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
+        if (allOpen) {
+          bsCollapse.show();
+        } else {
+          bsCollapse.hide();
+        }
+      }
+    });
+  }
+
+  function copyStimulus() {
+    const text = document.getElementById('stimulusText').innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      alert('উদ্দীপকটি ক্লিপবোর্ডে কপি হয়েছে!');
+    });
+  }
+</script>
+{% endblock %}

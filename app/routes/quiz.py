@@ -165,6 +165,16 @@ def submit(quiz_id):
         percentage=percentage,
     )
     db.session.add(attempt)
+
+    # Award Gamification points & streaks
+    earned_pts = score * 10 + (25 if percentage >= 80 else 10)
+    user.total_points += earned_pts
+    user.update_streak()
+    if percentage >= 80:
+        user.add_badge("Quiz Master")
+    if percentage == 100:
+        user.add_badge("Perfectionist")
+
     db.session.commit()
 
     log_activity(f"Completed quiz '{quiz.title}' with score {score}/{total}", "Quiz", user.id)
@@ -173,8 +183,18 @@ def submit(quiz_id):
         "quiz/result.html",
         user=user,
         quiz=quiz,
+        attempt=attempt,
         score=score,
         total=total,
         percentage=percentage,
         results=results,
     )
+
+
+@quiz_bp.route("/certificate/<int:attempt_id>")
+@login_required
+def certificate(attempt_id):
+    """Render official completion certificate suitable for saving / printing."""
+    user = get_current_user()
+    attempt = QuizAttempt.query.filter_by(id=attempt_id, user_id=user.id).first_or_404()
+    return render_template("quiz/certificate.html", user=user, attempt=attempt, quiz=attempt.quiz)
