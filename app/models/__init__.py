@@ -10,6 +10,7 @@ from app.models.task import StudyTask
 from app.models.note import Note, UploadedFile
 from app.models.quiz import Quiz, QuizQuestion, QuizAttempt
 from app.models.assignment import Assignment
+from app.models.assignment_submission import AssignmentSubmission
 from app.models.notification import Notification
 from app.models.study_session import StudySession
 from app.models.activity_log import ActivityLog
@@ -27,6 +28,7 @@ __all__ = [
     "QuizQuestion",
     "QuizAttempt",
     "Assignment",
+    "AssignmentSubmission",
     "Notification",
     "StudySession",
     "ActivityLog",

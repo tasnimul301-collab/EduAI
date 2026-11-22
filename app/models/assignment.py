@@ -35,5 +35,16 @@ class Assignment(db.Model):
         delta = self.due_date - datetime.utcnow()
         return max(0, delta.days)
 
+    def get_student_submission(self, student_id: int):
+        """Retrieve submission for a specific student if one exists."""
+        from app.models.assignment_submission import AssignmentSubmission
+        return AssignmentSubmission.query.filter_by(
+            assignment_id=self.id, user_id=student_id
+        ).first()
+
+    def is_submitted_by(self, student_id: int) -> bool:
+        """Check whether a specific student has submitted this assignment."""
+        return self.get_student_submission(student_id) is not None
+
     def __repr__(self) -> str:
         return f"<Assignment id={self.id} title='{self.title}' status='{self.status}'>"

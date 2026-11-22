@@ -11,7 +11,7 @@ Covers:
 """
 
 import unittest
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from app import create_app
 from app.extensions import db
 from app.models.user import User
@@ -321,6 +321,67 @@ class TestNewFeatures(unittest.TestCase):
         res_lb = self.client.get("/leaderboard")
         self.assertEqual(res_lb.status_code, 200)
         self.assertIn(b"Total Score", res_lb.data)
+
+    def test_student_word_and_pdf_assignment_submission(self):
+        """Test student submitting Word (.docx) and PDF (.pdf) documents to an assignment."""
+        import io
+        from app.models.assignment import Assignment
+        from app.models.assignment_submission import AssignmentSubmission
+
+        # 1. Create an assignment
+        assign = Assignment(
+            user_id=self.user.id,
+            title="Algorithm Analysis Report",
+            due_date=datetime.utcnow() + timedelta(days=7),
+            priority="high",
+            status="pending",
+        )
+        db.session.add(assign)
+        db.session.commit()
+
+        # 2. Student uploads a PDF file
+        pdf_content = b"%PDF-1.4 test assignment content"
+        res_pdf = self.client.post(
+            f"/assignments/{assign.id}/submit",
+            data={
+                "submission_file": (io.BytesIO(pdf_content), "Report_Alex.pdf"),
+                "submission_notes": "Here is my PDF report for Unit 1.",
+            },
+            content_type="multipart/form-data",
+            follow_redirects=True,
+        )
+        self.assertEqual(res_pdf.status_code, 200)
+        self.assertIn(b"Report_Alex.pdf", res_pdf.data)
+        self.assertIn(b"Submitted", res_pdf.data)
+
+        # Verify submission saved in database
+        sub = AssignmentSubmission.query.filter_by(assignment_id=assign.id, user_id=self.user.id).first()
+        self.assertIsNotNone(sub)
+        self.assertEqual(sub.original_filename, "Report_Alex.pdf")
+        self.assertTrue(sub.is_pdf())
+
+        # 3. Student downloads submitted file
+        res_dl = self.client.get(f"/assignments/download/{sub.id}")
+        self.assertEqual(res_dl.status_code, 200)
+        self.assertEqual(res_dl.data, pdf_content)
+
+        # 4. Student replaces/re-submits with a Word (.docx) file
+        docx_content = b"PK\x03\x04 mock word document stream"
+        res_docx = self.client.post(
+            f"/assignments/{assign.id}/submit",
+            data={
+                "submission_file": (io.BytesIO(docx_content), "Report_Alex_v2.docx"),
+                "submission_notes": "Updated version in Word format.",
+            },
+            content_type="multipart/form-data",
+            follow_redirects=True,
+        )
+        self.assertEqual(res_docx.status_code, 200)
+        self.assertIn(b"Report_Alex_v2.docx", res_docx.data)
+
+        sub2 = AssignmentSubmission.query.filter_by(assignment_id=assign.id, user_id=self.user.id).first()
+        self.assertEqual(sub2.original_filename, "Report_Alex_v2.docx")
+        self.assertTrue(sub2.is_word_doc())
 
 
 if __name__ == "__main__":

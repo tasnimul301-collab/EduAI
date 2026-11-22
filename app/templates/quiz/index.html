@@ -292,17 +292,10 @@
                 <i class="bi bi-clock me-1"></i>Est. {{ q.total_questions * 2 }} mins
               </div>
             </div>
-            <div class="d-flex align-items-center gap-2">
+            <div>
               <a href="{{ url_for('quiz.take', quiz_id=q.id) }}" class="btn btn-primary btn-sm px-3 shadow-sm text-nowrap">
                 <i class="bi bi-play-circle me-1"></i>Start Quiz
               </a>
-              {% if user.role == 'admin' %}
-              <form method="POST" action="{{ url_for('quiz.delete_quiz', quiz_id=q.id) }}" class="d-inline" onsubmit="return confirm('Delete this quiz?');">
-                <button type="submit" class="btn btn-outline-danger btn-sm px-2" title="Delete Quiz">
-                  <i class="bi bi-trash"></i>
-                </button>
-              </form>
-              {% endif %}
             </div>
           </div>
           {% endfor %}
@@ -454,51 +447,6 @@
 
     // Initialize on load
     updateSubjectsAndPills();
-  }
-
-  // Add Dynamic Question Card for Manual Quiz Form
-  let manualQCount = 1;
-  function addManualQuestion() {
-    manualQCount++;
-    const container = document.getElementById('manualQuestionsContainer');
-    if (!container) return;
-
-    const qCard = document.createElement('div');
-    qCard.className = 'p-3 border rounded bg-light manual-q-card';
-    qCard.setAttribute('data-idx', manualQCount);
-    qCard.innerHTML = `
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="fw-bold small text-primary">Question #${manualQCount}</span>
-        <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2" onclick="this.closest('.manual-q-card').remove()">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-      <div class="mb-2">
-        <input type="text" name="q_text_${manualQCount}" class="form-control form-control-sm" placeholder="Question statement..." required>
-      </div>
-      <div class="row g-1 mb-2">
-        <div class="col-6"><input type="text" name="opt_a_${manualQCount}" class="form-control form-control-sm" placeholder="(A) Option A" required></div>
-        <div class="col-6"><input type="text" name="opt_b_${manualQCount}" class="form-control form-control-sm" placeholder="(B) Option B" required></div>
-        <div class="col-6"><input type="text" name="opt_c_${manualQCount}" class="form-control form-control-sm" placeholder="(C) Option C" required></div>
-        <div class="col-6"><input type="text" name="opt_d_${manualQCount}" class="form-control form-control-sm" placeholder="(D) Option D" required></div>
-      </div>
-      <div class="row g-2">
-        <div class="col-5">
-          <label class="form-label small mb-1" style="font-size: 0.7rem;">Correct Answer</label>
-          <select name="correct_${manualQCount}" class="form-select form-select-sm">
-            <option value="A">A</option>
-            <option value="B">B</option>
-            <option value="C">C</option>
-            <option value="D">D</option>
-          </select>
-        </div>
-        <div class="col-7">
-          <label class="form-label small mb-1" style="font-size: 0.7rem;">Explanation</label>
-          <input type="text" name="explanation_${manualQCount}" class="form-control form-control-sm" placeholder="Short rationale...">
-        </div>
-      </div>
-    `;
-    container.appendChild(qCard);
   }
 
   // Show loading spinner on quiz generation to avoid duplicate clicks

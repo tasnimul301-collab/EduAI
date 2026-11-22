@@ -82,6 +82,7 @@ def leaderboard():
     from app.models.user import User
     from app.models.quiz import QuizAttempt
     from app.models.assignment import Assignment
+    from app.models.assignment_submission import AssignmentSubmission
     from app.models.flashcard import Flashcard, FlashcardDeck
 
     all_students = User.query.filter_by(role="student").all()
@@ -93,7 +94,9 @@ def leaderboard():
         quiz_pts = sum(att.score * 10 for att in attempts)
 
         # 2. Assignment points: submitted coursework * 20 pts
-        sub_assignments = Assignment.query.filter_by(user_id=s.id, status="submitted").count()
+        sub_assignments = AssignmentSubmission.query.filter_by(user_id=s.id).count()
+        if sub_assignments == 0:
+            sub_assignments = Assignment.query.filter_by(user_id=s.id, status="submitted").count()
         assign_pts = sub_assignments * 20
 
         # 3. Flashcards points: mastered cards * 5 pts
